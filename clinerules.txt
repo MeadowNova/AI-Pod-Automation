@@ -1,0 +1,73 @@
+# Cline Custom Instructions for POD Automation System — MeadowNova
+
+## General Principles
+- Use modular, production-ready Python 3.10+ code.
+- Type hint everything. Include docstrings and basic examples for all new functions.
+- Leverage Cline’s full MCP server suite for automation, coding, insight generation, and data analysis.
+
+## Available MCP Servers (Use When Relevant)
+- `mistral-mcp`: For natural language tasks like summarization, tag generation, creative product titles, prompt rewording
+- `sqlite`: For all persistent business logic: store listing data, logs, KPIs, and trend correlations; use for generating business insight memos
+- `python-codegen-mcp`: When adding new agent classes, logic modules, or utility scripts
+- `puppeteer-mcp` (disabled): Re-enable only if scraping dynamic sites (Etsy, Pinterest) in-browser
+- `perplexity-research`: For sourcing Etsy, Pinterest, or Amazon trends via web-based research
+- `knowledge-graph-memory`: Use for correlating product designs, audience interest, and trend insights over time
+- `file-system`: Access or manage assets (images, templates, mockups) during workflow
+- `sequential-thinking`: Enable for agents that must reason through multistep logic (e.g., A/B testing agent or performance optimizer)
+- `playwright`: Headless automation for lightweight scraping, mockup tests, or interaction
+
+## Crawlee Integration (Growth Phase Enhancer)
+- Use Crawlee for robust, scalable scraping as your project matures.
+- Suggested uses:
+  - Pinterest board scraping → extract keywords, pin descriptions, board categories
+  - Etsy bestseller category crawling → track top sellers, prices, SEO patterns
+  - Amazon review mining → extract product pain points
+  - Google search trends via autocomplete or People Also Ask
+- Store all extracted data in `/data/trends` and summarize key insights in `memo://insights` using `sqlite`
+- Crawlee crawlers should:
+  - Save structured JSON snapshots of pages
+  - Integrate `Playwright` for full-page rendering
+  - Automatically retry on 429 or JavaScript timeouts
+- Consider wrapping Crawlee runs with n8n or Airflow to keep pipelines clean
+
+## Agent Architecture
+- Agents must expose `.run()` method and use class-based input
+- Suggested agents and MCP usage:
+  - `TrendForecastingAgent`: Uses `perplexity-research`, stores results to `sqlite`
+  - `PromptOptimizerAgent`: Uses `mistral-mcp` or `quasar` to rewrite prompts based on trends
+  - `MockupGeneratorAgent`: Pulls from `/data/approved`, uses `file-system` and saves to `/data/mockups`
+  - `PublishingAgent`: Publishes to Printify + Etsy, logs results to `sqlite`
+  - `SEOAgent`: Uses `mistral-mcp` + `sqlite` to rewrite or optimize tags/descriptions, stores A/B tests
+  - `PerformanceAgent`: Fetches Etsy stats weekly via API or `sqlite`, generates insights in `memo://insights`
+  - `SocialAgent`: Posts to social via n8n, may use `mistral-mcp` for captions or `knowledge-graph-memory` for theme alignment
+  - `DashboardAgent`: Displays log summaries, insight memos, and task triggers via Streamlit/React
+
+## Automation & Logging
+- Use `n8n` to trigger workflows and connect Airtable → Printify → Etsy → Social flow
+- Log all major events to `sqlite` via MCP: publishes, errors, views, CTRs, keyword updates
+- All agents must be recoverable and idempotent
+- Insights from performance data should update `memo://insights` using `sqlite` for downstream agents
+
+## Directory & Data Structure
+- `/data/trends` → raw signals from Pinterest, eRank, Amazon, etc.
+- `/data/designs` → all SD or MJ-generated art
+- `/data/approved` → designs cleared for mockup
+- `/data/mockups` → product preview renders
+- `/data/published` → JSON with Printify & Etsy links
+- `/api/` → backend endpoints if exposed
+- `/agents/` → all agent classes
+- `/dash/` → dashboard UI logic
+- `/scripts/` → utilities (e.g., Etsy price extractor, Canva auto-download)
+- `/tests/` → unit + flow tests
+
+## Best Practices
+- Use MCP tools instead of rebuilding utilities from scratch
+- Use `python-codegen-mcp` for agent scaffolds and CLI tools
+- Use `mistral-mcp` for creative + NLP generation
+- Use `sqlite` for performance logging, memo writing, and agent state tracking
+- Add retry and error handling logic when hitting Etsy, Printify, or unstable APIs
+
+## Project Goals
+- Autonomously generate, optimize, and publish profitable Etsy listings
+- Reduce manual work on product creation, mockup rendering, SEO, and uploads
+- Build a foundation that can scale into a paid SaaS platform with MRR
