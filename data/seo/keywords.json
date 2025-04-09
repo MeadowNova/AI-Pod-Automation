@@ -1,0 +1,82 @@
+{
+  "cat": {
+    "search_volume": 9500,
+    "competition": 8.5
+  },
+  "cat t-shirt": {
+    "search_volume": 5200,
+    "competition": 7.2
+  },
+  "cat lover": {
+    "search_volume": 4800,
+    "competition": 6.8
+  },
+  "cat gift": {
+    "search_volume": 4500,
+    "competition": 7.5
+  },
+  "funny cat": {
+    "search_volume": 4200,
+    "competition": 6.5
+  },
+  "cute cat": {
+    "search_volume": 3900,
+    "competition": 6.2
+  },
+  "cat mom": {
+    "search_volume": 3600,
+    "competition": 5.8
+  },
+  "cat dad": {
+    "search_volume": 3300,
+    "competition": 5.5
+  },
+  "cat lover gift": {
+    "search_volume": 3000,
+    "competition": 7.0
+  },
+  "cat shirt": {
+    "search_volume": 2800,
+    "competition": 6.8
+  },
+  "cat tee": {
+    "search_volume": 2500,
+    "competition": 6.5
+  },
+  "cat tshirt": {
+    "search_volume": 2300,
+    "competition": 6.3
+  },
+  "cat design": {
+    "search_volume": 2100,
+    "competition": 5.9
+  },
+  "cat illustration": {
+    "search_volume": 1900,
+    "competition": 5.5
+  },
+  "cat art": {
+    "search_volume": 1700,
+    "competition": 6.2
+  },
+  "cat poster": {
+    "search_volume": 1500,
+    "competition": 5.8
+  },
+  "cat wall art": {
+    "search_volume": 1300,
+    "competition": 5.5
+  },
+  "cat pillow": {
+    "search_volume": 1100,
+    "competition": 5.2
+  },
+  "cat home decor": {
+    "search_volume": 900,
+    "competition": 5.0
+  },
+  "cat decor": {
+    "search_volume": 800,
+    "competition": 4.8
+  }
+}

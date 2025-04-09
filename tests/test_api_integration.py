@@ -16,14 +16,8 @@ from pod_automation.api import PrintifyAPI, EtsyAPI
 from pod_automation.config import get_config
 
 # Set up logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.FileHandler("api_test.log"),
-        logging.StreamHandler()
-    ]
-)
+from pod_automation.config.logging_config import setup_logging
+setup_logging()
 logger = logging.getLogger(__name__)
 
 def test_printify_api():

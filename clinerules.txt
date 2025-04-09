@@ -71,3 +71,14 @@
 - Autonomously generate, optimize, and publish profitable Etsy listings
 - Reduce manual work on product creation, mockup rendering, SEO, and uploads
 - Build a foundation that can scale into a paid SaaS platform with MRR
+
+---
+
+## Virtual Environment Enforcement Rules
+
+- Before executing any Python-related command (e.g., pytest, python, pip), check if the current Python interpreter path (`sys.executable`) is inside the project's virtual environment directory.
+- If the interpreter is outside the virtual environment (e.g., system Python), prompt the user:
+  "WARNING: You are not inside the virtual environment. Please activate it with 'source /path/to/venv/bin/activate' before running commands."
+- Refuse to execute Python commands unless the virtual environment is active, or explicitly confirm with the user.
+- When opening a new terminal or shell session, check for the presence of the virtual environment activation. If not active, suggest or auto-run the activation script.
+- Document in the README that all development and testing **must** be done inside the virtual environment to ensure consistency.

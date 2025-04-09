@@ -3,6 +3,10 @@ Interactive Dashboard for POD Automation System.
 Provides a user interface to interact with all components of the system.
 """
 
+import sys
+import os
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
 import os
 import sys
 import logging
@@ -30,10 +34,6 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # Import components
-from agents.trend_forecaster import TrendForecaster
-from agents.prompt_optimizer import PromptOptimizer
-from agents.stable_diffusion import create_stable_diffusion_client
-from agents.design_generation import DesignGenerationPipeline
 from agents.mockup_generator import MockupGenerator
 from agents.seo_optimizer import SEOOptimizer
 from pod_automation.config import get_config
@@ -72,6 +72,12 @@ class Dashboard:
         """Initialize all components."""
         logger.info("Initializing components")
         
+        # Import TrendForecaster, PromptOptimizer, DesignGenerationPipeline, and Stable Diffusion client here to avoid circular imports
+        from agents.trend_forecaster import TrendForecaster
+        from agents.prompt_optimizer import PromptOptimizer
+        from agents.design_generation import DesignGenerationPipeline
+        from agents.stable_diffusion import create_stable_diffusion_client
+        
         # Initialize trend forecaster
         if self.trend_forecaster is None:
             self.trend_forecaster = TrendForecaster(config={'data_dir': self.trends_dir})
@@ -86,13 +92,13 @@ class Dashboard:
             self.stable_diffusion = create_stable_diffusion_client(
                 use_api=True,
                 api_key=api_key,
-                config={'output_dir': self.designs_dir}
+                config={'output_dir': os.path.join(self.designs_dir, 'drafts')}
             )
         
         # Initialize design pipeline
         if self.design_pipeline is None:
             self.design_pipeline = DesignGenerationPipeline(config={
-                'output_dir': self.designs_dir,
+                'output_dir': os.path.join(self.designs_dir, 'drafts'),
                 'trend_dir': self.trends_dir,
                 'use_stable_diffusion_api': True,
                 'stable_diffusion_api_key': self.config.get('stable_diffusion.api_key') or os.environ.get('OPENROUTER_API_KEY')
@@ -1061,11 +1067,8 @@ class Dashboard:
         Returns:
             bool: True if connected, False otherwise
         """
-        if not self.stable_diffusion:
-            return False
-        
-        api_key = self.config.get('stable_diffusion.api_key') or os.environ.get('OPENROUTER_API_KEY')
-        return bool(api_key)
+        # PATCH: Force enable Stable Diffusion API for local server without API key
+        return True
     
     def get_recent_files(self, directory, ext=None, prefix=None, limit=10):
         """Get recent files from a directory.

@@ -14,14 +14,8 @@ from pathlib import Path
 import random
 
 # Set up logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.FileHandler("design_generation.log"),
-        logging.StreamHandler()
-    ]
-)
+from pod_automation.config.logging_config import setup_logging
+setup_logging()
 logger = logging.getLogger(__name__)
 
 # Import components

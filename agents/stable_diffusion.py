@@ -16,14 +16,8 @@ from pathlib import Path
 import random
 
 # Set up logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.FileHandler("stable_diffusion.log"),
-        logging.StreamHandler()
-    ]
-)
+from pod_automation.config.logging_config import setup_logging
+setup_logging()
 logger = logging.getLogger(__name__)
 
 class StableDiffusionAPI:
@@ -432,7 +426,7 @@ def main():
     )
     
     # Test image generation
-    prompt = "A cute cartoon cat wearing a t-shirt, digital art, vibrant colors"
+    prompt = "A modern t-shirt design with a colorful abstract pattern"
     success, result = sd_client.generate_image(prompt)
     
     if success:

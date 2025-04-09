@@ -12,14 +12,8 @@ from datetime import datetime
 from typing import List, Dict, Any, Optional, Tuple, Union
 
 # Set up logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.FileHandler("trend_forecaster.log"),
-        logging.StreamHandler()
-    ]
-)
+from pod_automation.config.logging_config import setup_logging
+setup_logging()
 logger = logging.getLogger(__name__)
 
 class TrendForecaster:
@@ -490,9 +484,11 @@ class TrendForecaster:
         
         # Combine terms with base keyword
         base_term = 'cat'
+        combined_terms = []
         for term in related:
             if term not in keyword.lower():
-                related.append(f"{base_term} {term}")
+                combined_terms.append(f"{base_term} {term}")
+        related.extend(combined_terms)
         
         # Remove duplicates and limit to 10
         related = list(dict.fromkeys(related))[:10]

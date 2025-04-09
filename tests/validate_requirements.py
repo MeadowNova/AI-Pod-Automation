@@ -16,14 +16,8 @@ from pod_automation.config import get_config
 from pod_automation.utils import optimize_api_client
 
 # Set up logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.FileHandler("validation.log"),
-        logging.StreamHandler()
-    ]
-)
+from pod_automation.config.logging_config import setup_logging
+setup_logging()
 logger = logging.getLogger(__name__)
 
 def validate_api_integrations():
