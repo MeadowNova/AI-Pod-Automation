@@ -24,13 +24,13 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # Import components
-from pod_automation.agents.trend_forecaster import TrendForecaster
-from pod_automation.agents.prompt_optimizer import PromptOptimizer
-from pod_automation.agents.stable_diffusion import create_stable_diffusion_client
-from pod_automation.agents.design_generation import DesignGenerationPipeline
-from pod_automation.agents.mockup_generator import MockupGenerator
-from pod_automation.agents.publishing_agent import PublishingAgent
-from pod_automation.agents.seo_optimizer import SEOOptimizer
+from agents.trend_forecaster import TrendForecaster
+from agents.prompt_optimizer import PromptOptimizer
+from agents.stable_diffusion import create_stable_diffusion_client
+from agents.design_generation import DesignGenerationPipeline
+from agents.mockup_generator import MockupGenerator
+from agents.publishing_agent import PublishingAgent
+from agents.seo_optimizer import SEOOptimizer
 from pod_automation.config import get_config, Config
 
 class PODAutomationSystem:

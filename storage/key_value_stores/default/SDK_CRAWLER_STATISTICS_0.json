@@ -1,0 +1,52 @@
+{
+  "requestsFinished": 0,
+  "requestsFailed": 1,
+  "requestsRetries": 1,
+  "requestsFailedPerMinute": 10,
+  "requestsFinishedPerMinute": 0,
+  "requestMinDurationMillis": null,
+  "requestMaxDurationMillis": 0,
+  "requestTotalFailedDurationMillis": 1271,
+  "requestTotalFinishedDurationMillis": 0,
+  "crawlerStartedAt": "2025-04-08T21:55:51.712Z",
+  "crawlerFinishedAt": "2025-04-08T21:55:57.126Z",
+  "statsPersistedAt": "2025-04-08T21:55:57.126Z",
+  "crawlerRuntimeMillis": 5562,
+  "crawlerLastStartTimestamp": 1744149351564,
+  "requestRetryHistogram": [
+    null,
+    null,
+    null,
+    1
+  ],
+  "statsId": 0,
+  "requestAvgFailedDurationMillis": 1271,
+  "requestAvgFinishedDurationMillis": null,
+  "requestTotalDurationMillis": 1271,
+  "requestsTotal": 1,
+  "requestsWithStatusCode": {
+    "403": 4
+  },
+  "errors": {
+    "/home/ajk/POD AI Automation/node_modules/@crawlee/basic/internals/basic-crawler.js:777:19": {
+      "missing error code": {
+        "Error": {
+          "Request blocked - received 403 status code.": {
+            "count": 1
+          }
+        }
+      }
+    }
+  },
+  "retryErrors": {
+    "/home/ajk/POD AI Automation/node_modules/@crawlee/basic/internals/basic-crawler.js:777:19": {
+      "missing error code": {
+        "Error": {
+          "Request blocked - received 403 status code.": {
+            "count": 3
+          }
+        }
+      }
+    }
+  }
+}

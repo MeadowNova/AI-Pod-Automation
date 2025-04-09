@@ -41,14 +41,15 @@ class StableDiffusionAPI:
         
         # Get API key and URL from config if not provided
         self.api_key = api_key or self.config.get('api_key') or os.environ.get('OPENROUTER_API_KEY')
-        self.api_url = api_url or self.config.get('api_url') or "https://openrouter.ai/api/v1/generate"
+        self.api_url = api_url or self.config.get('api_url') or "http://192.168.1.13:7860/sdapi/v1/txt2img"
         
         # Set up output directory
         self.output_dir = self.config.get('output_dir', 'data/designs')
         os.makedirs(self.output_dir, exist_ok=True)
         
-        if not self.api_key:
-            logger.warning("No API key provided for Stable Diffusion. Please set OPENROUTER_API_KEY environment variable or provide in config.")
+        if not self.api_url.startswith("http://127.0.0.1"):
+            if not self.api_key:
+                logger.warning("No API key provided for Stable Diffusion. Please set OPENROUTER_API_KEY environment variable or provide in config.")
     
     def generate_image(self, prompt, negative_prompt=None, width=1024, height=1024, num_inference_steps=50, guidance_scale=7.5, seed=None, model="stability-ai/sdxl"):
         """Generate an image using Stable Diffusion.
@@ -66,8 +67,9 @@ class StableDiffusionAPI:
         Returns:
             tuple: (success, image_path or error_message)
         """
-        if not self.api_key:
-            return False, "API key not set. Please set OPENROUTER_API_KEY environment variable or provide in config."
+        if not (self.api_url.startswith("http://127.0.0.1") or self.api_url.startswith("http://192.168.1.13")):
+            if not self.api_key:
+                return False, "API key not set. Please set OPENROUTER_API_KEY environment variable or provide in config."
         
         logger.info(f"Generating image with prompt: {prompt}")
         
@@ -76,21 +78,22 @@ class StableDiffusionAPI:
             if seed is None:
                 seed = random.randint(0, 2147483647)
             
-            # Prepare request payload
+            # Prepare request payload for Automatic1111 API
             payload = {
                 "prompt": prompt,
                 "negative_prompt": negative_prompt or "",
                 "width": width,
                 "height": height,
-                "num_inference_steps": num_inference_steps,
-                "guidance_scale": guidance_scale,
+                "steps": num_inference_steps,
+                "cfg_scale": guidance_scale,
                 "seed": seed,
-                "model": model
+                "sampler_name": "Euler a",
+                "batch_size": 1,
+                "n_iter": 1
             }
             
             # Prepare headers
             headers = {
-                "Authorization": f"Bearer {self.api_key}",
                 "Content-Type": "application/json"
             }
             
@@ -422,15 +425,11 @@ def main():
     """Main function to test Stable Diffusion integration."""
     logger.info("Testing Stable Diffusion integration")
     
-    # Get API key from environment variable
-    api_key = os.environ.get('OPENROUTER_API_KEY')
-    
-    if not api_key:
-        logger.error("API key not set. Please set OPENROUTER_API_KEY environment variable.")
-        return
-    
-    # Create Stable Diffusion client
-    sd_client = create_stable_diffusion_client(use_api=True, api_key=api_key)
+    # Create Stable Diffusion client pointing to local Automatic1111
+    sd_client = create_stable_diffusion_client(
+        use_api=True,
+        api_url="http://192.168.1.13:7860/sdapi/v1/txt2img"
+    )
     
     # Test image generation
     prompt = "A cute cartoon cat wearing a t-shirt, digital art, vibrant colors"

@@ -25,9 +25,9 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # Import components
-from pod_automation.agents.trend_forecaster import TrendForecaster
-from pod_automation.agents.prompt_optimizer import PromptOptimizer
-from pod_automation.agents.stable_diffusion import create_stable_diffusion_client
+from agents.trend_forecaster import TrendForecaster
+from agents.prompt_optimizer import PromptOptimizer
+from agents.stable_diffusion import create_stable_diffusion_client
 
 class DesignGenerationPipeline:
     """Pipeline for generating cat-themed designs based on trends."""
