@@ -32,7 +32,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # Import system
-from pod_automation.pod_automation_system import PODAutomationSystem
+from pod_automation_system import PODAutomationSystem
 from pod_automation.config import Config
 
 class PerformanceOptimizer:
@@ -1102,6 +1102,16 @@ def main():
     
     # Create system and optimizer
     system = PODAutomationSystem(config_path=args.config)
+    
+    # PATCH: Override output directories to test_logs for optimizer runs
+    test_log_dir = os.path.join('data', 'designs', 'test_logs')
+    if hasattr(system, 'stable_diffusion') and system.stable_diffusion:
+        if hasattr(system.stable_diffusion, 'config'):
+            system.stable_diffusion.config['output_dir'] = test_log_dir
+    if hasattr(system, 'design_pipeline') and system.design_pipeline:
+        if hasattr(system.design_pipeline, 'config'):
+            system.design_pipeline.config['output_dir'] = test_log_dir
+    
     optimizer = PerformanceOptimizer(system)
     
     # Process commands

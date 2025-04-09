@@ -1,0 +1,28 @@
+         214 function calls in 0.000 seconds
+
+   Ordered by: cumulative time
+   List reduced from 59 to 20 due to restriction <20>
+
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+        1    0.000    0.000    0.000    0.000 /home/ajk/POD AI Automation/agents/publishing_agent.py:552(validate_api_connections)
+        2    0.000    0.000    0.000    0.000 /home/ajk/.pyenv/versions/3.12.2/lib/python3.12/logging/__init__.py:1529(info)
+        2    0.000    0.000    0.000    0.000 /home/ajk/.pyenv/versions/3.12.2/lib/python3.12/logging/__init__.py:1660(_log)
+        2    0.000    0.000    0.000    0.000 /home/ajk/.pyenv/versions/3.12.2/lib/python3.12/logging/__init__.py:1686(handle)
+        2    0.000    0.000    0.000    0.000 /home/ajk/.pyenv/versions/3.12.2/lib/python3.12/logging/__init__.py:1746(callHandlers)
+        4    0.000    0.000    0.000    0.000 /home/ajk/.pyenv/versions/3.12.2/lib/python3.12/logging/__init__.py:1011(handle)
+        4    0.000    0.000    0.000    0.000 /home/ajk/.pyenv/versions/3.12.2/lib/python3.12/logging/__init__.py:1148(emit)
+        2    0.000    0.000    0.000    0.000 /home/ajk/.pyenv/versions/3.12.2/lib/python3.12/logging/__init__.py:1266(emit)
+        4    0.000    0.000    0.000    0.000 /home/ajk/.pyenv/versions/3.12.2/lib/python3.12/logging/__init__.py:1137(flush)
+        4    0.000    0.000    0.000    0.000 {method 'flush' of '_io.TextIOWrapper' objects}
+        2    0.000    0.000    0.000    0.000 /home/ajk/.pyenv/versions/3.12.2/lib/python3.12/logging/__init__.py:1645(makeRecord)
+        4    0.000    0.000    0.000    0.000 /home/ajk/.pyenv/versions/3.12.2/lib/python3.12/logging/__init__.py:988(format)
+        4    0.000    0.000    0.000    0.000 /home/ajk/.pyenv/versions/3.12.2/lib/python3.12/logging/__init__.py:690(format)
+        2    0.000    0.000    0.000    0.000 /home/ajk/.pyenv/versions/3.12.2/lib/python3.12/logging/__init__.py:298(__init__)
+        4    0.000    0.000    0.000    0.000 {method 'write' of '_io.TextIOWrapper' objects}
+        4    0.000    0.000    0.000    0.000 /home/ajk/.pyenv/versions/3.12.2/lib/python3.12/logging/__init__.py:622(formatTime)
+        2    0.000    0.000    0.000    0.000 /home/ajk/.pyenv/versions/3.12.2/lib/python3.12/logging/__init__.py:1611(findCaller)
+        1    0.000    0.000    0.000    0.000 {method 'disable' of '_lsprof.Profiler' objects}
+        2    0.000    0.000    0.000    0.000 /home/ajk/.pyenv/versions/3.12.2/lib/python3.12/logging/__init__.py:1790(isEnabledFor)
+        4    0.000    0.000    0.000    0.000 /home/ajk/.pyenv/versions/3.12.2/lib/python3.12/logging/__init__.py:674(formatMessage)
+
+

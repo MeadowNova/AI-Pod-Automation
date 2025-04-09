@@ -1,0 +1,28 @@
+         1433 function calls (1432 primitive calls) in 0.001 seconds
+
+   Ordered by: cumulative time
+   List reduced from 135 to 20 due to restriction <20>
+
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+        1    0.000    0.000    0.001    0.001 /home/ajk/POD AI Automation/agents/seo_optimizer.py:493(optimize_listing)
+        8    0.000    0.000    0.001    0.000 /home/ajk/.pyenv/versions/3.12.2/lib/python3.12/logging/__init__.py:1529(info)
+        8    0.000    0.000    0.001    0.000 /home/ajk/.pyenv/versions/3.12.2/lib/python3.12/logging/__init__.py:1660(_log)
+        8    0.000    0.000    0.001    0.000 /home/ajk/.pyenv/versions/3.12.2/lib/python3.12/logging/__init__.py:1686(handle)
+        8    0.000    0.000    0.000    0.000 /home/ajk/.pyenv/versions/3.12.2/lib/python3.12/logging/__init__.py:1746(callHandlers)
+       16    0.000    0.000    0.000    0.000 /home/ajk/.pyenv/versions/3.12.2/lib/python3.12/logging/__init__.py:1011(handle)
+       16    0.000    0.000    0.000    0.000 /home/ajk/.pyenv/versions/3.12.2/lib/python3.12/logging/__init__.py:1148(emit)
+        8    0.000    0.000    0.000    0.000 /home/ajk/.pyenv/versions/3.12.2/lib/python3.12/logging/__init__.py:1266(emit)
+        1    0.000    0.000    0.000    0.000 /home/ajk/POD AI Automation/agents/seo_optimizer.py:385(optimize_tags)
+        1    0.000    0.000    0.000    0.000 /home/ajk/POD AI Automation/agents/seo_optimizer.py:463(optimize_description)
+       16    0.000    0.000    0.000    0.000 /home/ajk/.pyenv/versions/3.12.2/lib/python3.12/logging/__init__.py:1137(flush)
+        1    0.000    0.000    0.000    0.000 /home/ajk/POD AI Automation/agents/seo_optimizer.py:436(optimize_title)
+       16    0.000    0.000    0.000    0.000 {method 'flush' of '_io.TextIOWrapper' objects}
+        1    0.000    0.000    0.000    0.000 /home/ajk/.pyenv/versions/3.12.2/lib/python3.12/re/__init__.py:179(sub)
+       16    0.000    0.000    0.000    0.000 /home/ajk/.pyenv/versions/3.12.2/lib/python3.12/logging/__init__.py:988(format)
+        1    0.000    0.000    0.000    0.000 /home/ajk/.pyenv/versions/3.12.2/lib/python3.12/re/__init__.py:280(_compile)
+       16    0.000    0.000    0.000    0.000 /home/ajk/.pyenv/versions/3.12.2/lib/python3.12/logging/__init__.py:690(format)
+        8    0.000    0.000    0.000    0.000 /home/ajk/.pyenv/versions/3.12.2/lib/python3.12/logging/__init__.py:1645(makeRecord)
+        8    0.000    0.000    0.000    0.000 /home/ajk/.pyenv/versions/3.12.2/lib/python3.12/logging/__init__.py:298(__init__)
+        1    0.000    0.000    0.000    0.000 /home/ajk/.pyenv/versions/3.12.2/lib/python3.12/re/_compiler.py:740(compile)
+
+

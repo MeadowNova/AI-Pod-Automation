@@ -95,14 +95,14 @@ class PODAutomationSystem:
             self.stable_diffusion = create_stable_diffusion_client(
                 use_api=True,
                 api_key=api_key,
-                config={'output_dir': self.designs_dir}
+                config={'output_dir': os.path.join(self.designs_dir, 'drafts')}
             )
             logger.info("Stable Diffusion client initialized")
         
         # Initialize design pipeline
         if self.design_pipeline is None:
             self.design_pipeline = DesignGenerationPipeline(config={
-                'output_dir': self.designs_dir,
+                'output_dir': os.path.join(self.designs_dir, 'drafts'),
                 'trend_dir': self.trends_dir,
                 'use_stable_diffusion_api': True,
                 'stable_diffusion_api_key': self.config.get('stable_diffusion.api_key') or os.environ.get('OPENROUTER_API_KEY')

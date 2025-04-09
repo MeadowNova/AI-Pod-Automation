@@ -1,0 +1,57 @@
+{
+  "timestamp": "2025-04-09 18:36:50",
+  "before": {
+    "trend_analysis": {
+      "time": 0.000438690185546875,
+      "memory": 230486016
+    },
+    "design_generation": {
+      "time": 214.2119538784027,
+      "memory": 240934912
+    },
+    "seo_optimization": {
+      "time": 0.0006687641143798828,
+      "memory": 240934912
+    },
+    "full_pipeline": {
+      "time": 0.08599734306335449,
+      "memory": 237989888
+    }
+  },
+  "after": {
+    "trend_analysis": {
+      "time": 1.9788742065429688e-05,
+      "memory": 237993984
+    },
+    "design_generation": {
+      "time": 127.8302845954895,
+      "memory": 233123840
+    },
+    "seo_optimization": {
+      "time": 0.0012521743774414062,
+      "memory": 233123840
+    },
+    "full_pipeline": {
+      "time": 0.07305717468261719,
+      "memory": 233172992
+    }
+  },
+  "improvement": {
+    "trend_analysis": {
+      "time": 95.48913043478261,
+      "memory": -3.257450551793997
+    },
+    "design_generation": {
+      "time": 40.32532625697803,
+      "memory": 3.241984291591581
+    },
+    "seo_optimization": {
+      "time": -87.23707664884135,
+      "memory": 3.241984291591581
+    },
+    "full_pipeline": {
+      "time": 15.047172296014127,
+      "memory": 2.0239918764951894
+    }
+  }
+}

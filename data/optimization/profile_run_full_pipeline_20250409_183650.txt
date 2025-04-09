@@ -1,0 +1,28 @@
+         1000 function calls in 0.001 seconds
+
+   Ordered by: cumulative time
+   List reduced from 77 to 20 due to restriction <20>
+
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+        1    0.000    0.000    0.001    0.001 /home/ajk/POD AI Automation/pod_automation_system.py:239(run_full_pipeline)
+        9    0.000    0.000    0.001    0.000 /home/ajk/.pyenv/versions/3.12.2/lib/python3.12/logging/__init__.py:1660(_log)
+        1    0.000    0.000    0.001    0.001 /home/ajk/POD AI Automation/agents/trend_forecaster.py:72(run_trend_analysis)
+        8    0.000    0.000    0.001    0.000 /home/ajk/.pyenv/versions/3.12.2/lib/python3.12/logging/__init__.py:1529(info)
+        9    0.000    0.000    0.001    0.000 /home/ajk/.pyenv/versions/3.12.2/lib/python3.12/logging/__init__.py:1686(handle)
+        9    0.000    0.000    0.001    0.000 /home/ajk/.pyenv/versions/3.12.2/lib/python3.12/logging/__init__.py:1746(callHandlers)
+       18    0.000    0.000    0.001    0.000 /home/ajk/.pyenv/versions/3.12.2/lib/python3.12/logging/__init__.py:1011(handle)
+       18    0.000    0.000    0.001    0.000 /home/ajk/.pyenv/versions/3.12.2/lib/python3.12/logging/__init__.py:1148(emit)
+        1    0.000    0.000    0.000    0.000 /home/ajk/POD AI Automation/agents/trend_forecaster.py:498(generate_trend_report)
+        9    0.000    0.000    0.000    0.000 /home/ajk/.pyenv/versions/3.12.2/lib/python3.12/logging/__init__.py:1266(emit)
+       18    0.000    0.000    0.000    0.000 /home/ajk/.pyenv/versions/3.12.2/lib/python3.12/logging/__init__.py:1137(flush)
+        1    0.000    0.000    0.000    0.000 {method '__exit__' of '_io._IOBase' objects}
+       18    0.000    0.000    0.000    0.000 {method 'flush' of '_io.TextIOWrapper' objects}
+        1    0.000    0.000    0.000    0.000 /home/ajk/POD AI Automation/agents/trend_forecaster.py:335(analyze_keyword)
+       18    0.000    0.000    0.000    0.000 /home/ajk/.pyenv/versions/3.12.2/lib/python3.12/logging/__init__.py:988(format)
+       18    0.000    0.000    0.000    0.000 /home/ajk/.pyenv/versions/3.12.2/lib/python3.12/logging/__init__.py:690(format)
+        9    0.000    0.000    0.000    0.000 /home/ajk/.pyenv/versions/3.12.2/lib/python3.12/logging/__init__.py:1645(makeRecord)
+        9    0.000    0.000    0.000    0.000 /home/ajk/.pyenv/versions/3.12.2/lib/python3.12/logging/__init__.py:298(__init__)
+       50    0.000    0.000    0.000    0.000 {method 'write' of '_io.TextIOWrapper' objects}
+        1    0.000    0.000    0.000    0.000 /home/ajk/.pyenv/versions/3.12.2/lib/python3.12/logging/__init__.py:1558(error)
+
+
