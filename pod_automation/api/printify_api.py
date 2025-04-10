@@ -113,7 +113,12 @@ class PrintifyAPI:
         Returns:
             dict: Shop information
         """
-        return self._make_request("GET", f"/shops/{self.shop_id}")
+        shops = self._make_request("GET", "/shops.json")
+        # Find shop with matching ID
+        for shop in shops:
+            if str(shop.get("id")) == str(self.shop_id):
+                return shop
+        raise Exception(f"Shop ID {self.shop_id} not found in your Printify account.")
     
     def get_catalog(self, page=1, limit=100):
         """Get catalog of available products.
@@ -129,7 +134,7 @@ class PrintifyAPI:
             "page": page,
             "limit": limit
         }
-        return self._make_request("GET", "/catalog/blueprints", params=params)
+        return self._make_request("GET", "/catalog/blueprints.json", params=params)
     
     def get_blueprint(self, blueprint_id):
         """Get blueprint information.
@@ -140,7 +145,7 @@ class PrintifyAPI:
         Returns:
             dict: Blueprint information
         """
-        return self._make_request("GET", f"/catalog/blueprints/{blueprint_id}")
+        return self._make_request("GET", f"/catalog/blueprints/{blueprint_id}.json")
     
     def get_blueprint_variants(self, blueprint_id, provider_id):
         """Get blueprint variants.
@@ -154,7 +159,7 @@ class PrintifyAPI:
         """
         return self._make_request(
             "GET", 
-            f"/catalog/blueprints/{blueprint_id}/providers/{provider_id}/variants"
+            f"/catalog/blueprints/{blueprint_id}/providers/{provider_id}/variants.json"
         )
     
     def get_print_providers(self, blueprint_id):
@@ -166,7 +171,7 @@ class PrintifyAPI:
         Returns:
             dict: Print providers
         """
-        return self._make_request("GET", f"/catalog/blueprints/{blueprint_id}/print_providers")
+        return self._make_request("GET", f"/catalog/blueprints/{blueprint_id}/print_providers.json")
     
     def get_products(self, page=1, limit=100):
         """Get products in the shop.

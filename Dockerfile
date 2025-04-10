@@ -1,28 +1,30 @@
-# POD Automation System Dockerfile
+# Multi-stage build for POD Automation System
 
+# Build stage
+FROM python:3.12 as builder
+WORKDIR /app
+COPY requirements.txt .
+RUN pip wheel --no-cache-dir -r requirements.txt
+
+# Runtime stage
 FROM python:3.12-slim
-
-# Set working directory
 WORKDIR /app
 
-# Install system dependencies
-RUN apt-get update && apt-get install -y \
-    git \
-    curl \
-    build-essential \
-    && rm -rf /var/lib/apt/lists/*
+# Create non-root user
+RUN addgroup --system app && adduser --system --ingroup app appuser
 
-# Copy project files
-COPY . /app
+# Copy wheels and install dependencies
+COPY --from=builder /app /wheels
+RUN pip install --no-index /wheels/*
 
-# Install Python dependencies
-RUN pip install --upgrade pip && pip install -r requirements.txt
+# Copy application code
+COPY . .
 
-# Expose Streamlit dashboard port
-EXPOSE 8501
+# Set non-root user
+USER appuser
 
-# Set environment variables (override at runtime)
-ENV PYTHONUNBUFFERED=1
+# Healthcheck endpoint (adjust port/path as needed)
+HEALTHCHECK --interval=30s --timeout=3s CMD curl -f http://localhost:8000/health || exit 1
 
-# Default command: run the dashboard
-CMD ["python3", "-m", "pod_automation.dashboard"]
+# Default command
+CMD ["python", "main.py"]

@@ -178,7 +178,7 @@ class EtsyAPI:
                 return self._make_request(method, endpoint, params, data, retry_count + 1)
             raise Exception(f"Failed to make request to Etsy API after retries: {str(e)}")
     
-    def start_oauth_flow(self, redirect_uri="http://localhost:3000/oauth/redirect", scopes="listings_r listings_w"):
+    def start_oauth_flow(self, redirect_uri="https://meadownova.com/callback", scopes="listings_r listings_w listings_d shops_r shops_w transactions_r transactions_w address_r address_w profile_r profile_w email_r feedback_r recommend_r recommend_w"):
         """Start the OAuth flow to authenticate with Etsy.
         
         Args:
@@ -195,26 +195,14 @@ class EtsyAPI:
         # Generate authorization URL
         auth_url = f"https://www.etsy.com/oauth/connect?response_type=code&client_id={self.api_key}&redirect_uri={redirect_uri}&scope={scopes}&state=random_state"
         
-        # Set up local server to handle redirect
-        server_thread = threading.Thread(target=self._run_oauth_server, args=(redirect_uri,))
-        server_thread.daemon = True
-        server_thread.start()
+        logger.info(f"Please manually open this URL in your browser to authorize the app:\n{auth_url}")
+        logger.info("Waiting for OAuth redirect on port 3456...")
         
-        # Open browser
-        logger.info(f"Opening browser to authorize application...")
-        logger.info(f"If the browser doesn't open automatically, please visit this URL:\n{auth_url}")
-        webbrowser.open(auth_url)
-        
-        # Wait for server thread to complete
-        server_thread.join(timeout=300)  # Wait up to 5 minutes
-        
-        # Check if we got a token
-        if self.access_token:
-            logger.info("Authentication successful.")
-            return True
-        else:
-            logger.error("Authentication failed or timed out.")
-            return False
+        # Since redirect_uri is a live server, do NOT run local server
+        logger.info("Waiting for you to complete OAuth in your browser...")
+        logger.info("After authorizing, your server at the callback URL should handle the code exchange.")
+        logger.info("Check your server logs or database for the new access token.")
+        return False  # Indicate that local flow is not completed here
     
     def _run_oauth_server(self, redirect_uri):
         """Run a local server to handle OAuth redirect.

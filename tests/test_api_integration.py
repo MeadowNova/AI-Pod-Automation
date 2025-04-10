@@ -12,7 +12,7 @@ from pathlib import Path
 # Add parent directory to path
 sys.path.append(str(Path(__file__).parent.parent))
 
-from pod_automation.api import PrintifyAPI, EtsyAPI
+from pod_automation.api import PrintifyAPI, EtsyAPI, PinterestAPI
 from pod_automation.config import get_config
 
 # Set up logging
@@ -50,7 +50,12 @@ def test_printify_api():
         
         # Test catalog access
         catalog = printify.get_catalog(limit=5)
-        logger.info(f"Successfully retrieved catalog. Total blueprints: {catalog.get('total', 0)}")
+        if isinstance(catalog, list):
+            logger.info(f"Successfully retrieved catalog. Total blueprints: {len(catalog)}")
+        elif isinstance(catalog, dict) and 'total' in catalog:
+            logger.info(f"Successfully retrieved catalog. Total blueprints: {catalog.get('total', 0)}")
+        else:
+            logger.info("Successfully retrieved catalog.")
         
         # Test products access
         products = printify.get_products(limit=5)
@@ -135,6 +140,22 @@ def test_etsy_api():
         logger.error(f"Failed to test Etsy API: {str(e)}")
         return False
 
+def test_pinterest_api():
+    """Test Pinterest API connection and functionality."""
+    logger.info("Testing Pinterest API connection...")
+
+    try:
+        pinterest = PinterestAPI()
+        profile = pinterest.get_user_profile()
+        logger.info(f"Successfully connected to Pinterest user: {profile.get('username', 'Unknown')}")
+        boards = pinterest.get_boards()
+        logger.info(f"Successfully retrieved {len(boards.get('items', []))} boards.")
+        return True
+    except Exception as e:
+        logger.error(f"Failed to test Pinterest API: {str(e)}")
+        return False
+
+
 def main():
     """Main function to test API connections."""
     logger.info("Starting API integration tests...")
@@ -144,13 +165,17 @@ def main():
     
     # Test Etsy API
     etsy_success = test_etsy_api()
+
+    # Test Pinterest API
+    pinterest_success = test_pinterest_api()
     
     # Print summary
     logger.info("\n=== API Integration Test Summary ===")
     logger.info(f"Printify API: {'SUCCESS' if printify_success else 'FAILED'}")
     logger.info(f"Etsy API: {'SUCCESS' if etsy_success else 'FAILED'}")
+    logger.info(f"Pinterest API: {'SUCCESS' if pinterest_success else 'FAILED'}")
     
-    if printify_success and etsy_success:
+    if printify_success and etsy_success and pinterest_success:
         logger.info("All API integrations are working correctly!")
     else:
         logger.warning("Some API integrations failed. Please check the logs for details.")
