@@ -1,0 +1,46 @@
+Airtable Setup Guide for POD Automation
+
+Step 1: Create an Airtable Account and Base
+- Sign up at https://airtable.com/ if you don't have an account.
+- Create a new base (e.g., "POD Automation").
+
+Step 2: Design Your Schema
+- In your new base, create a main table called "Designs".
+- Optionally, add tables for "Trends", "Market Analysis", or "Publishing Logs" if you want to track more data.
+
+Step 3: Configure Fields in the "Designs" Table
+Add the following fields (with recommended Airtable types):
+- Design Name (Single line text)
+- Description (Long text)
+- Tags (Multiple select)
+- Design File (Attachment or URL)
+- Status (Single select: Ready, Published, Error, Needs Review)
+- Product Type (Single select: T-shirt, Sweatshirt, Poster, Pillow Case, etc.)
+- Collection (Multiple select or linked to a "Collections" table: Artist Collection, Meme Collection, etc.)
+- Printify Product ID (Single line text)
+- Etsy Listing ID (Single line text)
+- Last Published (Date)
+- Error Log (Long text)
+- Add any additional fields you need for your workflow.
+
+Step 4: Set Up Airtable API Access
+- Go to your Airtable account settings and generate a personal access token.
+- Note your base ID and table names.
+- This will allow your Python scripts and agents to read from and write to your Airtable base programmatically.
+
+Step 5: Prepare for Python Integration
+- Install the pyairtable library: pip install pyairtable
+- Write a test script to connect to your Airtable base using your API token and base ID.
+- Verify you can read and write records in your "Designs" table.
+
+Step 6: (Optional) Set Up Airtable Automations or Views
+- Create filtered views for each product type, collection, or status (e.g., Ready, Published, Error).
+- Set up email notifications or reminders for specific statuses if desired.
+- This will help you monitor your automation pipeline at a glance.
+
+Tips:
+- Use "Product Type" and "Collection" fields to categorize and filter your designs.
+- For advanced organization, create a separate "Collections" table and link it to "Designs".
+- Test adding a few sample records to ensure your setup matches your workflow.
+
+This structure will give you a scalable, organized, and automation-friendly foundation for your POD business in Airtable.

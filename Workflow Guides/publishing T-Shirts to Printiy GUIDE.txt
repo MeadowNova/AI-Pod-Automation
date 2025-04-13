@@ -1,0 +1,309 @@
+Step-by-Step Guide: Automating Printify Product Publishing with Python (Flask)
+Introduction
+This guide walks through modifying a Python-based (Flask) publishing agent to automatically import “Ready for Publish” designs and publish products via the Printify API. We’ll create Printify products for a Bella+Canvas 3001 t-shirt fulfilled by Monster Digital (Printify provider ID 29) and push them live to Etsy. The agent will handle design placement, variant setup (sizes & colors), pricing, publishing to Etsy, and webhook integration for product/order updates. By the end, you’ll have a robust, scalable pipeline that matches your existing product catalog, with code examples and best practices.
+Prerequisites & Setup
+Before coding, ensure you have the following:
+Printify Account & API Access: A Printify account with your Etsy store linked (via OAuth). Generate a Printify API token with the necessary scopes (e.g. products.write, products.read, uploads.write, webhooks.write, etc.)​
+developers.printify.com
+. This token authenticates your API calls.
+Python & Flask Environment: Python 3.x installed, and a Flask project (optional but recommended for handling webhooks and any web UI). Install required libraries: requests (for API calls), flask (for the web server), and optionally boto3 or Firebase SDK if using cloud storage for images.
+Design Files Ready: All “Ready for Publish” design files prepared at 4500×5100 px, 300 DPI. This corresponds to a ~15×17 inch print area (the target physical design size). Ensure each design meets these specs for optimal print quality.
+Existing Product Data: If you have an existing catalog (titles, descriptions, tags for each design), have it accessible (e.g. in a database or CSV). The script will use this to create matching product listings.
+Understanding the Printify Product Blueprint & Variants
+Printify organizes products by blueprint (the product model) and print provider. In this case:
+Blueprint – Bella+Canvas 3001 T-Shirt: Blueprint ID 12 represents the unisex Jersey Short Sleeve Tee (Bella+Canvas 3001)​
+developers.printify.com
+.
+Print Provider – Monster Digital: Provider ID 29 corresponds to Monster Digital (the fulfiller). Monster Digital supports Bella+Canvas 3001 with a specific set of colors and sizes.
+Using the Printify API, you can retrieve variant details for this blueprint/provider combination. Variants represent each color/size option (e.g. “Black / M”). We will filter for the 12 required colors: Baby Blue, Black, Dark Grey Heather, Deep Heather, Heather Navy, Natural, Navy, Soft Pink, White, Yellow, Heather Peach, Black Heather, in sizes S, M, L, XL, 2XL, 3XL. Tip: Use the Catalog endpoints to fetch variant IDs for these options. For example, a GET request to:
+bash
+Copy
+Edit
+GET /v1/catalog/blueprints/12/print_providers/29/variants.json
+returns all variant objects for Bella+Canvas 3001 by Monster Digital​
+developers.printify.com
+. You can then filter this JSON by options.color and options.size fields to find the IDs for the above colors and sizes. Save these variant IDs – they will be needed when creating the product. Example – Fetching and filtering variants in Python:
+python
+Copy
+Edit
+import requests
+
+api_token = "PRINTIFY_API_TOKEN"
+headers = {"Authorization": f"Bearer {api_token}"}
+blueprint_id = 12
+provider_id = 29
+
+url = f"https://api.printify.com/v1/catalog/blueprints/{blueprint_id}/print_providers/{provider_id}/variants.json"
+resp = requests.get(url, headers=headers)
+all_variants = resp.json()["variants"]
+
+# Define the allowed colors and sizes
+allowed_colors = {"Baby Blue", "Black", "Dark Grey Heather", "Deep Heather", 
+                  "Heather Navy", "Natural", "Navy", "Soft Pink", 
+                  "White", "Yellow", "Heather Peach", "Black Heather"}
+allowed_sizes = {"S", "M", "L", "XL", "2XL", "3XL"}
+
+# Filter for only the variants we want
+selected_variants = [
+    v for v in all_variants 
+    if v["options"]["color"] in allowed_colors and v["options"]["size"] in allowed_sizes
+]
+print(f"Found {len(selected_variants)} matching variants")
+for v in selected_variants[:5]:
+    print(v["id"], v["title"], v["options"])
+This will output the variant IDs and names (e.g. “Black / S”) for the first few matches. Ensure it found all the expected combinations (12 colors × 6 sizes = 72 variants, assuming all sizes available in each color). We’ll use selected_variants to construct our product.
+Uploading Design Images to Printify
+Printify requires artwork to be uploaded to their media library before attaching it to a product. The agent will take each design file and upload it via the Printify API. There are two methods:
+Direct Upload (Base64): Send the image file contents in the API request.
+By URL: Provide a publicly accessible URL from which Printify will download the image.
+Initial (Local) Method – Direct Upload: Using local storage, we can read the file and send it as Base64. The endpoint is POST /v1/uploads/images.json. Include a JSON body with a file_name and either a contents (Base64 string) or a url​
+developers.printify.com
+. For example:
+python
+Copy
+Edit
+import base64
+
+design_path = "designs/my_cool_design.png"  # local file path
+with open(design_path, "rb") as f:
+    encoded = base64.b64encode(f.read()).decode('utf-8')
+
+upload_data = {
+    "file_name": "my_cool_design.png",
+    "contents": encoded    # or use "url": "https://.../my_cool_design.png"
+}
+resp = requests.post("https://api.printify.com/v1/uploads/images.json", 
+                     headers=headers, json=upload_data)
+upload_info = resp.json()
+image_id = upload_info["id"]
+print("Uploaded image ID:", image_id)
+The response will include an id for the image in Printify’s library​
+developers.printify.com
+. Save this image_id. (We’ll attach this image to the product’s print area next.) If the upload fails (e.g. image too large or invalid format), the API returns an error message – handle these by logging and skipping or alerting. Production-Grade Approach – Cloud Storage: For scaling up, managing design files in a cloud storage service is recommended instead of relying on local files. Options include AWS S3, Google Cloud Storage, or Firebase Storage. Storing files in the cloud provides durability and easier access for a distributed system.
+Example using S3: You might upload all design files to an S3 bucket (manually or via script). The agent can then generate a pre-signed URL for each file (a time-limited public URL). Pass this URL to Printify’s upload endpoint ("url": "<presigned-url>") instead of Base64 content. Printify will fetch the image from S3 directly​
+developers.printify.com
+. This offloads the transfer, saving bandwidth and memory on your server.
+Firebase Storage: Similarly, upload designs to Firebase and obtain a download URL. Ensure the URL is accessible or uses an appropriate token.
+By using cloud storage, your publishing agent doesn’t have to keep large image files on disk, and it simplifies collaboration (designers can drop files in the storage and mark them “ready” in a database for the agent to pick up).
+Creating the Printify Product via API
+With the design uploaded and variant info ready, the agent can create a new Printify product. This is done by a POST request to /v1/shops/{shop_id}/products.json (where shop_id is your Printify store ID for the Etsy shop). The request JSON will include: title, description, blueprint_id, print_provider_id, variants, print areas, etc. Let’s build the payload step by step for one design. We assume you have variables like title, description, and tags for the design (perhaps from your existing catalog data). Also, we have the selected_variants list from earlier and the image_id from upload. a. Define Product Metadata:
+Choose a title and description (possibly from your catalog). Tags can be a list of keywords. For example:
+python
+Copy
+Edit
+design_title = "My Cool Design Tee"
+design_desc = "A cool t-shirt with my awesome design. Soft Bella+Canvas 3001 tee, various colors."
+design_tags = ["cool", "awesome", "bella canvas", "unisex t-shirt"]
+b. Construct Variants List with Pricing:
+According to requirements, apply variant-specific pricing:
+Sizes S, M, L, XL at $35.70 each
+Size 2XL at $38.56
+Size 3XL at $40.75
+Printify expects prices in cents (integer). Also, is_enabled should be true for all active variants. Optionally, one variant can be marked "is_default": true to be the default selection (otherwise the first in the list may be default). We’ll also include the variant id. For example:
+python
+Copy
+Edit
+# Pricing mapping (dollars to cents)
+price_map = {
+    "S": 3570, "M": 3570, "L": 3570, "XL": 3570,
+    "2XL": 3856, "3XL": 4075
+}
+variants_payload = []
+for variant in selected_variants:
+    size = variant["options"]["size"]
+    price_cents = price_map.get(size, 3570)
+    variants_payload.append({
+        "id": variant["id"],
+        "price": price_cents,
+        "is_enabled": True
+    })
+# Mark the first variant as default
+if variants_payload:
+    variants_payload[0]["is_default"] = True
+Each variant entry includes the Printify variant id and the price. (We omit SKU here; Printify can auto-generate one or you can provide a custom SKU to map to your catalog). Note: All variants that you want available must be listed in this payload – if you omit any, they won’t be included in the product​
+developers.printify.com
+. c. Define Print Areas and Design Placement:
+We need to specify how the design image should be placed on the shirt. Bella+Canvas 3001 has a front print area (and possibly back, if enabled – but we’ll assume front-only for this guide). We will place our uploaded image_id onto the front placeholder for all variants. Printify uses a normalized coordinate system for placement. The origin (0,0) is one corner of the print area, and (1,1) the opposite corner. The point (0.5, 0.5) represents the center​
+developers.printify.com
+. The scale is relative to the print area size (1.0 means 100% width). Since our designs were prepared at the exact target print area size (4500×5100 px), we can place them centered at full scale. 
+
+Printify’s coordinate system for design placement – (0.5, 0.5) is centered in the print area, and scale 1.0 fills the area​
+developers.printify.com
+. In JSON, print areas are defined per set of variants. We can group all variants together if the same design applies to all. For example:
+python
+Copy
+Edit
+print_areas_payload = [
+    {
+        "variant_ids": [v["id"] for v in selected_variants],  # all variant IDs
+        "placeholders": [
+            {
+                "position": "front",  # front print area
+                "images": [
+                    {
+                        "id": image_id,      # the uploaded image ID
+                        "x": 0.5, "y": 0.5,   # centered
+                        "scale": 1.0,        # 100% scale (fills 15\" width)
+                        "angle": 0           # no rotation
+                    }
+                ]
+            }
+        ]
+    }
+]
+Here, we attach the same image to the “front” of every variant (all color/size combos). We set x and y to 0.5 to center it, and scale to 1.0. According to Printify’s docs, if your artwork width equals the print area width, using scale 1.0 and center (0.5,0.5) will fill the area fully and align perfectly​
+developers.printify.com
+. This ensures the design prints at ~15×17 inches on the shirt, as intended. (Printify will automatically generate mockup images for each color using this placement.) d. Compile the Product Creation Payload:
+Now combine everything into the final payload structure for creating the product:
+python
+Copy
+Edit
+product_payload = {
+    "title": design_title,
+    "description": design_desc,
+    "blueprint_id": 12,             # Bella+Canvas 3001
+    "print_provider_id": 29,        # Monster Digital
+    "variants": variants_payload,   # variant list with prices
+    "print_areas": print_areas_payload,
+    "tags": design_tags,
+    "category": { "id": 2 }         # (optional) category id if you want to categorize in Printify
+    # You can include "options" for custom SKU or other settings if needed.
+}
+create_url = f"https://api.printify.com/v1/shops/{shop_id}/products.json"
+resp = requests.post(create_url, headers=headers, json=product_payload)
+if resp.status_code == 201:
+    product = resp.json()
+    product_id = product.get("id")
+    print("Product created in Printify with ID:", product_id)
+else:
+    print("Product creation failed:", resp.status_code, resp.text)
+This call creates the product in your Printify account (as a draft, not yet published to Etsy). The response includes a Printify product_id. It’s wise to store this product_id in your database, associated with the design (and perhaps store the variant IDs and image ID used), for future reference or updates. Note: If the API returns an error (e.g., image quality too low, missing fields, etc.), examine resp.text for details. A common mistake is not listing all required variants or using an image that doesn’t meet resolution requirements (4500×5100 at 300 DPI in our case)​
+developers.printify.com
+​
+developers.printify.com
+. Ensure your payload follows the required structure and try again if needed.
+Publishing the Product to Etsy
+After creating the product on Printify, it exists as a draft in your Printify account. The next step is to publish it to your linked Etsy store. Printify’s API provides a publish endpoint:
+bash
+Copy
+Edit
+POST /v1/shops/{shop_id}/products/{product_id}/publish.json
+The request body can specify which fields to sync to the store. To publish everything (title, description, images, variants, tags, etc.), you can send all true flags​
+developers.printify.com
+:
+python
+Copy
+Edit
+publish_url = f"https://api.printify.com/v1/shops/{shop_id}/products/{product_id}/publish.json"
+publish_body = {
+    "title": True,
+    "description": True,
+    "images": True,
+    "variants": True,
+    "tags": True,
+    "keyFeatures": True,
+    "shipping_template": True   # use Printify’s default shipping settings for Etsy
+}
+resp = requests.post(publish_url, headers=headers, json=publish_body)
+if resp.status_code == 200:
+    print("Product publish initiated successfully!")
+else:
+    print("Publish failed:", resp.status_code, resp.text)
+If successful, Printify will push the product to Etsy. The API responds quickly (HTTP 200 with an empty JSON {}) if the request is accepted​
+developers.printify.com
+. Publishing might take a few seconds on the backend to actually create the Etsy listing. You should soon see the new product live in your Etsy shop with the title, description, images (mockups), all 12 color variants (S–3XL), and prices we set. Printify will also assign its internal external_id for the Etsy listing (which links the Printify product to the Etsy listing ID). Important: While the publish.json call is synchronous, the product might be locked during publishing. Printify marks the product as “publishing” until the process completes. If needed, you can poll the product or rely on webhooks (next section) to know when publishing is done. In most cases, a 200 response indicates it’s enqueued correctly. Any errors (like an OAuth issue with Etsy) would come back as non-200 responses or via a webhook event for failure. Printify also provides endpoints to mark publishing succeeded or failed manually​
+developers.printify.com
+, but these are generally not needed unless you handle publishing externally.
+Setting Up Printify Webhooks (Product & Order Updates)
+To monitor product and order events (e.g. to get notified when an order is placed on Etsy or when an order’s status changes), configure Printify webhooks. Webhooks let Printify POST event data to your Flask app in real-time whenever certain events occur in your shop​
+developers.printify.com
+.
+Registering Webhooks
+Use the API to subscribe to relevant topics. Common webhook topics include: product:publish:finished (when a product is published), order:created (when a new order comes in), order:updated (when an order status updates, e.g. fulfilled). You can create a webhook subscription by calling:
+bash
+Copy
+Edit
+POST /v1/shops/{shop_id}/webhooks.json
+with a JSON body containing the topic and a url (the endpoint on your server that will receive the webhook)​
+developers.printify.com
+. It’s recommended to also set a secret in the webhook for security. Below is an example for order creation and update events:
+python
+Copy
+Edit
+# Define your publicly reachable webhook URLs
+base_webhook_url = "https://<your-domain>/webhook/printify"
+webhooks_to_create = [
+    { "topic": "order:created", "url": f"{base_webhook_url}/order-created", "secret": "myWebhookSecret" },
+    { "topic": "order:updated", "url": f"{base_webhook_url}/order-updated", "secret": "myWebhookSecret" }
+]
+for wh in webhooks_to_create:
+    resp = requests.post(f"https://api.printify.com/v1/shops/{shop_id}/webhooks.json",
+                         headers=headers, json=wh)
+    print(resp.status_code, resp.text)
+This registers two webhooks: one for new orders and one for order updates. (You could similarly add product:publish:finished with its own URL if you want notifications when products are published.) The Printify API will return the created webhook object with an id if successful​
+developers.printify.com
+. Make sure your Flask app routes match these URLs.
+Implementing Webhook Handlers in Flask
+In your Flask application, set up routes to handle the POST requests from Printify. For example:
+python
+Copy
+Edit
+from flask import Flask, request, abort
+import hmac, hashlib
+
+app = Flask(__name__)
+WEBHOOK_SECRET = "myWebhookSecret"  # same as used when creating webhook
+
+def verify_printify_signature(secret, request):
+    """Verify Printify webhook signature (HMAC SHA256)."""
+    signature_header = request.headers.get("X-Pfy-Signature", "")
+    if not signature_header:
+        return False
+    try:
+        algo, sig = signature_header.split("=", 1)
+    except ValueError:
+        return False
+    if algo != "sha256":
+        return False
+    computed = hmac.new(secret.encode(), request.data, hashlib.sha256).hexdigest()
+    return hmac.compare_digest(computed, sig)
+
+@app.route("/webhook/printify/order-created", methods=["POST"])
+def on_order_created():
+    if not verify_printify_signature(WEBHOOK_SECRET, request):
+        abort(401, "Invalid signature")
+    data = request.get_json()
+    order_id = data.get("id")
+    print(f"Received Order Created webhook for Order ID: {order_id}")
+    # TODO: handle the new order (e.g., save to DB, send confirmation)
+    return "OK", 200
+
+@app.route("/webhook/printify/order-updated", methods=["POST"])
+def on_order_updated():
+    if not verify_printify_signature(WEBHOOK_SECRET, request):
+        abort(401, "Invalid signature")
+    data = request.get_json()
+    order_id = data.get("id")
+    status = data.get("status")
+    print(f"Order {order_id} status updated to: {status}")
+    # TODO: update order status in DB, notify customer if shipped, etc.
+    return "OK", 200
+In the above code, verify_printify_signature uses the shared secret to compute an HMAC SHA256 of the request body and compares it to the X-Pfy-Signature header sent by Printify. Printify signs each payload using the secret you provided​
+developers.printify.com
+, so this validation ensures the request truly came from Printify and wasn’t tampered with. We abort with 401 if the signature check fails. The handlers then parse the JSON (data). For an order event, data will contain at least an id (Printify’s order ID) and possibly other fields like status (e.g. pending, in_production, fulfilled). You can use the order ID to fetch more details if needed (GET /v1/shops/{shop_id}/orders/{order_id}.json) or to update your internal records. For example, on order:created, you might record the order in your system or send yourself a notification. On order:updated, you might check if status == "fulfilled" to know if the order has been shipped, then update your customer or trigger an email, etc. Finally, respond with 200 OK to acknowledge receipt. Printify will retry webhooks a few times if it doesn’t get a 200. Note: Be sure the webhook URLs you provide are accessible (e.g. if you’re testing locally, use a tool like ngrok to expose your Flask server, or deploy the Flask app on a public server). Also, keep your WEBHOOK_SECRET safe; if you change it, update the webhook via API accordingly.
+Data Architecture & Scaling Considerations
+When scaling this agent to many designs and orders, consider the following best practices:
+Data Storage: Maintain a database (SQL or NoSQL) to track designs and products. For example, a table for designs with fields like design_id, title, description, file_path or file_url, etc., and a table for products with fields like product_id (Printify ID), design_id (link to design), etsy_listing_id, status (published or not), etc. This helps to avoid re-publishing the same design and to update or manage products later.
+File Storage: Migrate away from local files to cloud storage as mentioned. For AWS S3, you can structure bucket folders by design or category, and store the S3 URL or key in your designs table. This way the agent always retrieves the latest artwork from a single source of truth. Using a CDN or caching for these images can speed up uploads.
+Error Handling & Logging: Implement robust logging around API calls. Printify’s API might occasionally return errors or timeouts; log the response (and maybe the payload) for debugging. Handle exceptions so one failed design doesn’t crash the whole batch run. For example, if one variant is out of stock, Printify might reject the product creation – you could catch that and either remove that variant or skip the product with a warning. Monitoring logs or using an error tracking tool will help maintain the agent in production.
+Performance & Rate Limits: Printify’s API allows up to 600 requests/minute​
+developers.printify.com
+. Creating a product with 72 variants is just 1 request, plus 1 for image upload and 1 for publishing (~3 requests per design). This is efficient, but if you publish many designs in a short time, be mindful of the limit of 200 product creations per 30 minutes​
+developers.printify.com
+. You might incorporate a slight delay or queue if publishing hundreds of products at once. If using Flask, you could offload long-running tasks to a background worker (Celery or RQ) to keep the web thread free – e.g., a route triggers a job that processes a batch of designs.
+Modularity: Structure your code into functions or classes for each step (e.g., upload_image(design), create_product(design, image_id, variants), publish_product(product_id)). This makes it easier to maintain and test each part. You can even use a config file or constants for things like BLUEPRINT_ID = 12, PRINT_PROVIDER_ID = 29, the color list, etc., so they can be updated without code changes if needed.
+Testing: Before running on all designs, test the pipeline with one design. Verify the design appears correctly on Printify and Etsy (correct placement, variants, prices). Perhaps create a sandbox Etsy shop or set the Etsy listing to Draft (Printify’s publish might not support draft mode though) or simply hide it until ready, so you can inspect it without customers seeing. Utilize Printify’s web interface as well – the created product should appear in your Printify account’s My Products, linked to Etsy.
+Maintaining Sync with Catalog: Since the goal is to match an existing product catalog, ensure any future changes in your catalog (e.g., updating a description or price) are also applied via the Printify API (you can use PUT /products/{id}.json to update products). Similarly, if a product is discontinued, you might want to unpublish it via POST /products/{id}/unpublish.json​
+developers.printify.com
+.
+By following this guide, your Python/Flask agent will automatically take new designs from storage, create Printify products with Monster Digital’s Bella+Canvas 3001 shirt, apply the specified variants and pricing, publish them to Etsy, and listen for order events via webhooks. This automation reduces manual work and scales your print-on-demand operations while keeping data and assets organized. Good luck with your publishing agent, and happy selling!
