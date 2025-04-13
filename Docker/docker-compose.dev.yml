@@ -1,0 +1,32 @@
+version: '3.8'
+
+# Development configuration for POD Automation System
+# This configuration mounts the local code into the container for live reloading
+# and uses Streamlit's auto-reload feature for faster development
+
+services:
+  pod-automation-dev:
+    build: .
+    container_name: pod-automation-dev
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8501:8501"  # Streamlit port (restricted to localhost)
+    volumes:
+      - .:/app  # Mount entire project directory for live code reloading
+    networks:
+      - pod_network_dev
+    environment:
+      - PYTHONUNBUFFERED=1
+      # Add API keys here or in a .env file (preferred)
+      # - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
+      # - PRINTIFY_API_KEY=${PRINTIFY_API_KEY}
+      # - PRINTIFY_SHOP_ID=${PRINTIFY_SHOP_ID}
+      # - ETSY_API_KEY=${ETSY_API_KEY}
+      # - ETSY_API_SECRET=${ETSY_API_SECRET}
+      # - ETSY_SHOP_ID=${ETSY_SHOP_ID}
+    # Use streamlit run with --server.runOnSave=true for auto-reloading
+    command: streamlit run pod_automation/dashboard.py --server.runOnSave=true --server.port=8501
+
+networks:
+  pod_network_dev:
+    driver: bridge

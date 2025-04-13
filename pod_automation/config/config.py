@@ -1,6 +1,7 @@
 """
 Configuration module for POD Automation System.
 Handles loading and saving configuration values.
+Prioritizes environment variables for sensitive data.
 """
 
 import os
@@ -9,6 +10,17 @@ import logging
 from pathlib import Path
 
 logger = logging.getLogger(__name__)
+
+# Map of config keys to environment variable names
+ENV_VAR_MAPPING = {
+    "api.printify.api_key": "PRINTIFY_API_KEY",
+    "api.printify.shop_id": "PRINTIFY_SHOP_ID",
+    "api.etsy.api_key": "ETSY_API_KEY",
+    "api.etsy.api_secret": "ETSY_API_SECRET",
+    "api.etsy.shop_id": "ETSY_SHOP_ID",
+    "api.pinterest.api_key": "PINTEREST_API_KEY",
+    "api.openrouter.api_key": "OPENROUTER_API_KEY"
+}
 
 class Config:
     """Configuration manager for POD Automation System."""
@@ -66,6 +78,13 @@ class Config:
         Returns:
             Configuration value or default if not found
         """
+        # First check if there's an environment variable for this key
+        if key in ENV_VAR_MAPPING:
+            env_value = os.environ.get(ENV_VAR_MAPPING[key])
+            if env_value is not None:
+                return env_value
+        
+        # Fall back to config file
         # Handle dot notation (e.g., "api.printify.api_key")
         keys = key.split('.')
         value = self.config

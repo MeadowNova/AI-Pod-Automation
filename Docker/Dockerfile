@@ -4,7 +4,7 @@
 FROM python:3.12 as builder
 WORKDIR /app
 COPY requirements.txt .
-RUN pip wheel --no-cache-dir -r requirements.txt
+RUN pip wheel --no-cache-dir --default-timeout=100 --retries=10 -r requirements.txt
 
 # Runtime stage
 FROM python:3.12-slim
@@ -15,7 +15,7 @@ RUN addgroup --system app && adduser --system --ingroup app appuser
 
 # Copy wheels and install dependencies
 COPY --from=builder /app /wheels
-RUN pip install --no-index /wheels/*
+RUN pip install --no-index /wheels/*.whl
 
 # Copy application code
 COPY . .

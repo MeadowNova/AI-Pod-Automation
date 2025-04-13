@@ -1,0 +1,58 @@
+version: '3.8'
+
+# Production-specific overrides for docker-compose.yml
+# Usage: docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+
+services:
+  pod-automation:
+    restart: always
+    # Use specific image tag instead of building locally
+    # image: your-registry/pod-automation:latest
+    # build: .  # Comment this out when using a specific image
+    environment:
+      # In production, set environment variables directly or use Docker secrets
+      # instead of .env file
+      - PYTHONUNBUFFERED=1
+      # - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
+      # - PRINTIFY_API_KEY=${PRINTIFY_API_KEY}
+      # - PRINTIFY_SHOP_ID=${PRINTIFY_SHOP_ID}
+      # - ETSY_API_KEY=${ETSY_API_KEY}
+      # - ETSY_API_SECRET=${ETSY_API_SECRET}
+      # - ETSY_SHOP_ID=${ETSY_SHOP_ID}
+    # Additional production settings
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+    # Additional security options
+    security_opt:
+      - no-new-privileges:true
+    # Read-only root filesystem with specific writable paths
+    read_only: true
+    tmpfs:
+      - /tmp
+    volumes:
+      - ./data:/app/data:ro  # Read-only data
+      - ./logs:/app/logs     # Writable logs
+      # Add a named volume for writable application data if needed
+      # - pod_writable_data:/app/writable_data
+
+# Define named volumes for persistent data
+volumes:
+  pod_writable_data:
+    driver: local
+
+# Use the same network as defined in docker-compose.yml
+networks:
+  pod_network:
+    external: true  # Use the network created by the base docker-compose.yml

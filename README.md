@@ -15,11 +15,14 @@ The POD Automation System is a comprehensive solution for automating print-on-de
 
 ### Prerequisites
 
-- Python 3.8 or higher
+- Python 3.8 or higher (for local development)
+- Docker and Docker Compose (for containerized development)
 - Printify account with API key
 - Etsy account with API key and secret
 
 ### Installation
+
+#### Local Installation
 
 1. Clone the repository:
 ```bash
@@ -35,6 +38,58 @@ pip install -r requirements.txt
 3. Set up API keys:
 ```bash
 python -m pod_automation.main --setup
+```
+
+#### Docker Development Environment
+
+For a containerized development environment with live code reloading:
+
+1. Make sure Docker and Docker Compose are installed on your system
+
+2. Run the development script:
+```bash
+./dev.sh
+```
+
+3. Access the Streamlit dashboard at http://localhost:8501
+
+4. Make changes to your code and see them reflected immediately in the browser
+
+5. View logs with:
+```bash
+docker-compose -f docker-compose.dev.yml logs -f
+```
+
+6. Stop the development environment:
+```bash
+docker-compose -f docker-compose.dev.yml down
+```
+
+#### Docker Production Deployment
+
+For deploying to production with Docker:
+
+1. Configure your production environment variables (API keys, etc.)
+
+2. Deploy using the production configuration:
+```bash
+docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+```
+
+3. The production setup includes:
+   - Resource limits (CPU and memory)
+   - Improved logging configuration
+   - Read-only filesystem with specific writable paths
+   - Enhanced security settings
+
+4. Monitor the application:
+```bash
+docker-compose -f docker-compose.yml -f docker-compose.prod.yml logs -f
+```
+
+5. Stop the production environment:
+```bash
+docker-compose -f docker-compose.yml -f docker-compose.prod.yml down
 ```
 
 ### Validating API Connections

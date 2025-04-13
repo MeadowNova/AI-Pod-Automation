@@ -1131,6 +1131,15 @@ class Dashboard:
 
 def main():
     """Main function to run the dashboard."""
+    # Start healthcheck server for Docker container monitoring
+    try:
+        from pod_automation.healthcheck import start_healthcheck_server
+        healthcheck_thread = start_healthcheck_server()
+        logger.info("Healthcheck server started successfully")
+    except Exception as e:
+        logger.error(f"Failed to start healthcheck server: {str(e)}")
+    
+    # Run the dashboard
     dashboard = Dashboard()
     dashboard.run_dashboard()
 

@@ -1,0 +1,40 @@
+version: '3.8'
+
+# This docker-compose file uses best security practices:
+# - Restricts port binding to localhost only
+# - Uses a dedicated network with proper isolation
+# - Includes healthcheck for monitoring
+# - Loads sensitive data from .env file (create this file locally, DO NOT commit to source control)
+
+services:
+  pod-automation:
+    build: .
+    container_name: pod-automation
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8501:8501"  # Restrict to localhost only
+    volumes:
+      - ./data:/app/data:ro  # Read-only where possible
+      - ./logs:/app/logs
+    networks:
+      - pod_network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8501/healthz"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    environment:
+      - PYTHONUNBUFFERED=1
+      # Add API keys here or in a .env file (preferred)
+      # - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
+      # - PRINTIFY_API_KEY=${PRINTIFY_API_KEY}
+      # - PRINTIFY_SHOP_ID=${PRINTIFY_SHOP_ID}
+      # - ETSY_API_KEY=${ETSY_API_KEY}
+      # - ETSY_API_SECRET=${ETSY_API_SECRET}
+      # - ETSY_SHOP_ID=${ETSY_SHOP_ID}
+    command: python3 -m pod_automation.dashboard
+
+networks:
+  pod_network:
+    driver: bridge
