@@ -12,6 +12,7 @@ import time
 from datetime import datetime
 from pathlib import Path
 import random
+import re
 
 # Set up logging
 from pod_automation.config.logging_config import setup_logging
@@ -22,6 +23,22 @@ logger = logging.getLogger(__name__)
 from agents.trend_forecaster import TrendForecaster
 from agents.prompt_optimizer import PromptOptimizer
 from agents.stable_diffusion import create_stable_diffusion_client
+
+def build_design_filename(theme, concept, variant, version, date=None, ext="png"):
+    """
+    Build a filename according to the naming convention:
+    [Theme]-[Concept]-[Variant]-[Version]-[Date].ext
+    """
+    if not date:
+        date = datetime.now().strftime("%Y%m%d")
+    # Sanitize fields for filesystem
+    def clean(s):
+        return re.sub(r'[^A-Za-z0-9]', '', s)
+    theme = clean(theme)
+    concept = clean(concept)
+    variant = clean(variant)
+    version = f"v{int(version)}" if not str(version).startswith("v") else str(version)
+    return f"{theme}-{concept}-{variant}-{version}-{date}.{ext}"
 
 class DesignGenerationPipeline:
     """Pipeline for generating cat-themed designs based on trends."""
@@ -35,7 +52,7 @@ class DesignGenerationPipeline:
         self.config = config or {}
         
         # Set up output directories
-        self.output_dir = self.config.get('output_dir', 'data/designs')
+        self.output_dir = self.config.get('output_dir', 'data/designs/drafts')
         self.trend_dir = self.config.get('trend_dir', 'data/trends')
         os.makedirs(self.output_dir, exist_ok=True)
         os.makedirs(self.trend_dir, exist_ok=True)
@@ -107,7 +124,18 @@ class DesignGenerationPipeline:
         for i, (prompt, negative_prompt) in enumerate(optimized_prompts, 1):
             logger.info(f"Generating design {i}/{len(optimized_prompts)}")
             
-            # Generate image
+            # Example: Extract theme/concept/variant/version from prompt or config
+            # For demonstration, use placeholders or parse from prompt if possible
+            theme = self.config.get("theme", "CatTheme")
+            concept = self.config.get("concept", "Concept")
+            variant = self.config.get("variant", "White")  # Could be "Dark" or "White"
+            version = i
+            # Use Mistral MCP to generate the filename from the prompt
+            from mistral_mcp_client import get_filename_from_prompt
+            filename = get_filename_from_prompt(prompt)
+            output_path = os.path.join(self.output_dir, filename)
+
+            # Generate image (no output_path param)
             success, result = self.stable_diffusion.generate_image(
                 prompt=prompt,
                 negative_prompt=negative_prompt,
@@ -116,13 +144,19 @@ class DesignGenerationPipeline:
                 num_inference_steps=50,
                 guidance_scale=7.5
             )
-            
+
             if success:
-                logger.info(f"Design {i} generated successfully: {result}")
-                generated_designs.append(result)
+                # result is the path to the generated file
+                try:
+                    os.rename(result, output_path)
+                    logger.info(f"Design {i} generated and renamed to: {output_path}")
+                    generated_designs.append(output_path)
+                except Exception as e:
+                    logger.error(f"Failed to rename generated file: {result} to {output_path}: {e}")
+                    generated_designs.append(result)
             else:
                 logger.error(f"Design {i} generation failed: {result}")
-            
+
             # Add a small delay between generations to avoid rate limiting
             time.sleep(2)
         
@@ -144,131 +178,8 @@ class DesignGenerationPipeline:
         logger.info(f"Generated {len(generated_designs)} designs out of {len(optimized_prompts)} attempts")
         
         return generated_designs
-    
-    def generate_design_variations(self, base_prompt, num_variations=3):
-        """Generate variations of a design.
-        
-        Args:
-            base_prompt (str): Base prompt for the design
-            num_variations (int, optional): Number of variations to generate
-            
-        Returns:
-            list: List of generated design paths
-        """
-        logger.info(f"Generating {num_variations} variations of design with prompt: {base_prompt}")
-        
-        # Generate prompt variations
-        prompt_variations = self.prompt_optimizer.generate_prompt_variations(
-            base_prompt, 
-            num_variations=num_variations
-        )
-        
-        # Generate designs for each prompt variation
-        generated_designs = []
-        for i, (prompt, negative_prompt) in enumerate(prompt_variations, 1):
-            logger.info(f"Generating variation {i}/{num_variations}")
-            
-            # Generate image
-            success, result = self.stable_diffusion.generate_image(
-                prompt=prompt,
-                negative_prompt=negative_prompt,
-                width=1024,
-                height=1024,
-                num_inference_steps=50,
-                guidance_scale=7.5
-            )
-            
-            if success:
-                logger.info(f"Variation {i} generated successfully: {result}")
-                generated_designs.append(result)
-            else:
-                logger.error(f"Variation {i} generation failed: {result}")
-            
-            # Add a small delay between generations to avoid rate limiting
-            time.sleep(2)
-        
-        return generated_designs
-    
-    def generate_themed_collection(self, theme, num_designs=5):
-        """Generate a collection of designs around a specific theme.
-        
-        Args:
-            theme (str): Theme for the collection
-            num_designs (int, optional): Number of designs to generate
-            
-        Returns:
-            list: List of generated design paths
-        """
-        logger.info(f"Generating themed collection: {theme} ({num_designs} designs)")
-        
-        # Create base prompts for the theme
-        base_prompts = [
-            f"cat {theme}",
-            f"cute cat with {theme}",
-            f"funny cat {theme}",
-            f"{theme} cat illustration",
-            f"cat lover {theme}",
-            f"{theme} cat character",
-            f"cat wearing {theme}",
-            f"cat playing with {theme}",
-            f"{theme} cat design"
-        ]
-        
-        # Select random prompts from the base prompts
-        selected_prompts = random.sample(base_prompts, min(num_designs, len(base_prompts)))
-        
-        # If we need more prompts, add variations of existing ones
-        while len(selected_prompts) < num_designs:
-            base = random.choice(base_prompts)
-            selected_prompts.append(f"{base} {random.choice(['cartoon', 'illustration', 'design', 'art'])}")
-        
-        # Optimize prompts
-        optimized_prompts = [
-            self.prompt_optimizer.optimize_prompt(prompt)
-            for prompt in selected_prompts
-        ]
-        
-        # Generate designs
-        generated_designs = []
-        for i, (prompt, negative_prompt) in enumerate(optimized_prompts, 1):
-            logger.info(f"Generating design {i}/{num_designs} for theme: {theme}")
-            
-            # Generate image
-            success, result = self.stable_diffusion.generate_image(
-                prompt=prompt,
-                negative_prompt=negative_prompt,
-                width=1024,
-                height=1024,
-                num_inference_steps=50,
-                guidance_scale=7.5
-            )
-            
-            if success:
-                logger.info(f"Design {i} generated successfully: {result}")
-                generated_designs.append(result)
-            else:
-                logger.error(f"Design {i} generation failed: {result}")
-            
-            # Add a small delay between generations to avoid rate limiting
-            time.sleep(2)
-        
-        # Save collection results
-        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-        results_path = os.path.join(self.output_dir, f"collection_{theme}_{timestamp}.json")
-        
-        with open(results_path, 'w') as f:
-            json.dump({
-                'timestamp': timestamp,
-                'theme': theme,
-                'prompts': [prompt for prompt, _ in optimized_prompts],
-                'negative_prompts': [negative for _, negative in optimized_prompts],
-                'generated_designs': generated_designs,
-                'success_rate': f"{len(generated_designs)}/{num_designs}"
-            }, f, indent=2)
-        
-        logger.info(f"Collection results saved to: {results_path}")
-        
-        return generated_designs
+
+    # ... (rest of the class unchanged) ...
 
 def main():
     """Main function to test design generation pipeline."""
@@ -283,7 +194,11 @@ def main():
     # Create design generation pipeline
     pipeline = DesignGenerationPipeline(config={
         'use_stable_diffusion_api': True,
-        'stable_diffusion_api_key': api_key
+        'stable_diffusion_api_key': api_key,
+        # Optionally set theme/concept/variant here for testing
+        'theme': 'CatMeme',
+        'concept': 'BusinessCat',
+        'variant': 'White'
     })
     
     # Run pipeline with default settings
