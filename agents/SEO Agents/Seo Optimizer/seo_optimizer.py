@@ -16,8 +16,13 @@ import requests
 from collections import Counter
 
 # Set up logging
-from pod_automation.config.logging_config import setup_logging
-setup_logging()
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    handlers=[
+        logging.StreamHandler(sys.stdout)
+    ]
+)
 logger = logging.getLogger(__name__)
 
 class SEOOptimizer:
@@ -148,7 +153,6 @@ class SEOOptimizer:
         
         Args:
             template_type (str): Type of templates to load
-            
         Returns:
             list: List of templates
         """
@@ -178,43 +182,43 @@ class SEOOptimizer:
             ]
         elif template_type == 'description_templates':
             default_templates = [
-                "Show your love for cats with this adorable {keyword} {product_type}! Perfect for cat lovers, this {product_type} features a unique design that will make you stand out.\n\n"
-                "🐱 PRODUCT DETAILS 🐱\n"
-                "• High-quality {product_type}\n"
-                "• Unique cat design\n"
-                "• Makes a perfect gift for cat lovers\n"
-                "• Available in multiple sizes\n\n"
-                "🎁 PERFECT GIFT 🎁\n"
-                "This {keyword} {product_type} makes a wonderful gift for cat moms, cat dads, or anyone who loves cats. Surprise your cat-loving friends and family with this unique present!\n\n"
-                "📦 SHIPPING 📦\n"
-                "• Made to order just for you\n"
-                "• Ships within 1-3 business days\n"
-                "• Carefully packaged to ensure safe delivery\n\n"
-                "❤️ WHY CUSTOMERS LOVE US ❤️\n"
-                "• High-quality products\n"
-                "• Unique designs\n"
-                "• Fast shipping\n"
-                "• Excellent customer service\n\n"
+                "Show your love for cats with this adorable {keyword} {product_type}! Perfect for cat lovers, this {product_type} features a unique design that will make you stand out.\n\n"\
+                "🐱 PRODUCT DETAILS 🐱\n"\
+                "• High-quality {product_type}\n"\
+                "• Unique cat design\n"\
+                "• Makes a perfect gift for cat lovers\n"\
+                "• Available in multiple sizes\n\n"\
+                "🎁 PERFECT GIFT 🎁\n"\
+                "This {keyword} {product_type} makes a wonderful gift for cat moms, cat dads, or anyone who loves cats. Surprise your cat-loving friends and family with this unique present!\n\n"\
+                "📦 SHIPPING 📦\n"\
+                "• Made to order just for you\n"\
+                "• Ships within 1-3 business days\n"\
+                "• Carefully packaged to ensure safe delivery\n\n"\
+                "❤️ WHY CUSTOMERS LOVE US ❤️\n"\
+                "• High-quality products\n"\
+                "• Unique designs\n"\
+                "• Fast shipping\n"\
+                "• Excellent customer service\n\n"\
                 "Order your {keyword} {product_type} today and show your cat love in style!",
                 
-                "Calling all cat lovers! This {keyword} {product_type} is purr-fect for showing your love for feline friends. Each {product_type} features a unique cat design that's sure to make you smile.\n\n"
-                "🐱 ABOUT THIS {product_type_upper} 🐱\n"
-                "• Premium quality materials\n"
-                "• Durable and long-lasting\n"
-                "• Unique cat-themed design\n"
-                "• Makes a great conversation starter\n\n"
-                "🎁 GIFT IDEAS 🎁\n"
-                "This {keyword} {product_type} is perfect for:\n"
-                "• Birthday gifts for cat lovers\n"
-                "• Christmas presents\n"
-                "• Mother's Day or Father's Day\n"
-                "• Just because gifts for cat people\n\n"
-                "📦 SHIPPING & HANDLING 📦\n"
-                "• Each {product_type} is made to order with care\n"
-                "• Processing time: 1-3 business days\n"
-                "• Packaged securely for safe delivery\n\n"
-                "❓ QUESTIONS? ❓\n"
-                "Feel free to message us with any questions about this {keyword} {product_type}. We're happy to help!\n\n"
+                "Calling all cat lovers! This {keyword} {product_type} is purr-fect for showing your love for feline friends. Each {product_type} features a unique cat design that's sure to make you smile.\n\n"\
+                "🐱 ABOUT THIS {product_type_upper} 🐱\n"\
+                "• Premium quality materials\n"\
+                "• Durable and long-lasting\n"\
+                "• Unique cat-themed design\n"\
+                "• Makes a great conversation starter\n\n"\
+                "🎁 GIFT IDEAS 🎁\n"\
+                "This {keyword} {product_type} is perfect for:\n"\
+                "• Birthday gifts for cat lovers\n"\
+                "• Christmas presents\n"\
+                "• Mother's Day or Father's Day\n"\
+                "• Just because gifts for cat people\n\n"\
+                "📦 SHIPPING & HANDLING 📦\n"\
+                "• Each {product_type} is made to order with care\n"\
+                "• Processing time: 1-3 business days\n"\
+                "• Packaged securely for safe delivery\n\n"\
+                "❓ QUESTIONS? ❓\n"\
+                "Feel free to message us with any questions about this {keyword} {product_type}. We're happy to help!\n\n"\
                 "Add this purr-fect {keyword} {product_type} to your cart today!"
             ]
         else:
@@ -231,15 +235,7 @@ class SEOOptimizer:
         return default_templates
     
     def update_keywords_from_etsy(self, query="cat", limit=20):
-        """Update keywords based on Etsy search suggestions.
-        
-        Args:
-            query (str, optional): Base query for search suggestions
-            limit (int, optional): Maximum number of keywords to fetch
-            
-        Returns:
-            bool: True if keywords were updated, False otherwise
-        """
+        """Update keywords based on Etsy search suggestions."""
         logger.info(f"Updating keywords from Etsy search suggestions for query: {query}")
         
         try:
@@ -279,10 +275,8 @@ class SEOOptimizer:
             # Generate simulated search volume and competition
             new_keywords = {}
             for suggestion in suggestions:
-                # Generate random search volume (100-10000) and competition (1-10)
                 search_volume = random.randint(100, 10000)
                 competition = round(random.uniform(1, 10), 1)
-                
                 new_keywords[suggestion] = {
                     'search_volume': search_volume,
                     'competition': competition
@@ -305,15 +299,7 @@ class SEOOptimizer:
             return False
     
     def generate_long_tail_keywords(self, base_keywords=None, count=20):
-        """Generate long-tail keywords from base keywords.
-        
-        Args:
-            base_keywords (list, optional): List of base keywords
-            count (int, optional): Number of long-tail keywords to generate
-            
-        Returns:
-            dict: Dictionary of generated long-tail keywords
-        """
+        """Generate long-tail keywords from base keywords."""
         logger.info("Generating long-tail keywords")
         
         # Use provided base keywords or top keywords from self.keywords
@@ -383,16 +369,7 @@ class SEOOptimizer:
         return long_tail
     
     def optimize_tags(self, base_keyword, product_type, count=13):
-        """Optimize tags for an Etsy listing.
-        
-        Args:
-            base_keyword (str): Base keyword for the listing
-            product_type (str): Type of product
-            count (int, optional): Number of tags to generate (max 13 for Etsy)
-            
-        Returns:
-            list: List of optimized tags
-        """
+        """Optimize tags for an Etsy listing."""
         logger.info(f"Optimizing tags for {base_keyword} {product_type}")
         
         # Combine keywords and long-tail keywords
@@ -409,7 +386,7 @@ class SEOOptimizer:
             for keyword, data in all_keywords.items():
                 if keyword not in related_keywords:
                     related_keywords[keyword] = data
-                    if len(related_keywords) >= count * 2:  # Get more than needed for sorting
+                    if len(related_keywords) >= count * 2:
                         break
         
         # Sort keywords by search volume / competition ratio (higher is better)
@@ -434,16 +411,7 @@ class SEOOptimizer:
         return selected_keywords
     
     def optimize_title(self, base_keyword, product_type, tags=None):
-        """Optimize title for an Etsy listing.
-        
-        Args:
-            base_keyword (str): Base keyword for the listing
-            product_type (str): Type of product
-            tags (list, optional): List of tags to incorporate
-            
-        Returns:
-            str: Optimized title
-        """
+        """Optimize title for an Etsy listing."""
         logger.info(f"Optimizing title for {base_keyword} {product_type}")
         
         # Select a random title template
@@ -461,16 +429,7 @@ class SEOOptimizer:
         return title
     
     def optimize_description(self, base_keyword, product_type, tags=None):
-        """Optimize description for an Etsy listing.
-        
-        Args:
-            base_keyword (str): Base keyword for the listing
-            product_type (str): Type of product
-            tags (list, optional): List of tags to incorporate
-            
-        Returns:
-            str: Optimized description
-        """
+        """Optimize description for an Etsy listing."""
         logger.info(f"Optimizing description for {base_keyword} {product_type}")
         
         # Select a random description template
@@ -491,15 +450,7 @@ class SEOOptimizer:
         return description
     
     def optimize_listing(self, base_keyword, product_type):
-        """Optimize an Etsy listing with tags, title, and description.
-        
-        Args:
-            base_keyword (str): Base keyword for the listing
-            product_type (str): Type of product
-            
-        Returns:
-            dict: Optimized listing data
-        """
+        """Optimize an Etsy listing with tags, title, and description."""
         logger.info(f"Optimizing listing for {base_keyword} {product_type}")
         
         # Optimize tags
@@ -534,15 +485,7 @@ class SEOOptimizer:
         return optimized_listing
     
     def analyze_competitor_listings(self, keyword, limit=10):
-        """Analyze competitor listings for a keyword.
-        
-        Args:
-            keyword (str): Keyword to analyze
-            limit (int, optional): Maximum number of listings to analyze
-            
-        Returns:
-            dict: Analysis results
-        """
+        """Analyze competitor listings for a keyword."""
         logger.info(f"Analyzing competitor listings for keyword: {keyword}")
         
         try:
@@ -559,7 +502,7 @@ class SEOOptimizer:
                     'title': f"Simulated {keyword} listing {i+1}",
                     'description': f"This is a simulated description for a {keyword} listing.",
                     'tags': [f"tag{j}" for j in range(1, 14)],
-                    'price': random.randint(1500, 5000) / 100,  # $15.00 - $50.00
+                    'price': random.randint(1500, 5000) / 100.0,
                     'views': random.randint(100, 10000),
                     'favorites': random.randint(10, 1000),
                     'sales': random.randint(1, 100)
@@ -570,7 +513,6 @@ class SEOOptimizer:
             for listing in listings:
                 words = re.findall(r'\b\w+\b', listing['title'].lower())
                 title_words.extend(words)
-            
             title_word_counts = Counter(title_words)
             top_title_words = title_word_counts.most_common(20)
             
@@ -578,7 +520,6 @@ class SEOOptimizer:
             all_tags = []
             for listing in listings:
                 all_tags.extend(listing['tags'])
-            
             tag_counts = Counter(all_tags)
             top_tags = tag_counts.most_common(20)
             
@@ -619,15 +560,7 @@ class SEOOptimizer:
             return None
     
     def generate_seo_report(self, keyword, product_type):
-        """Generate an SEO report for a keyword and product type.
-        
-        Args:
-            keyword (str): Keyword to analyze
-            product_type (str): Type of product
-            
-        Returns:
-            str: SEO report
-        """
+        """Generate an SEO report for a keyword and product type."""
         logger.info(f"Generating SEO report for {keyword} {product_type}")
         
         try:
@@ -685,7 +618,7 @@ class SEOOptimizer:
                 report.append(f"- **Price Range**: ${price_analysis['minimum']} - ${price_analysis['maximum']}")
                 
                 # Price recommendation
-                recommended_price = round(price_analysis['average'] * 0.9, 2)  # Slightly lower than average
+                recommended_price = round(price_analysis['average'] * 0.9, 2)
                 report.append(f"- **Recommended Price**: ${recommended_price} (slightly below average to attract buyers)\n")
             
             # Optimized listing section
@@ -700,7 +633,7 @@ class SEOOptimizer:
             report.append(optimized_listing['description'][:500] + "..." if len(optimized_listing['description']) > 500 else optimized_listing['description'])
             report.append("```\n")
             
-            # Recommendations section
+            # SEO Recommendations section
             report.append("## SEO Recommendations")
             report.append("1. **Use all 13 tags** allowed by Etsy to maximize visibility")
             report.append("2. **Include keywords in your title, description, and tags** for better search ranking")
@@ -723,7 +656,7 @@ class SEOOptimizer:
         except Exception as e:
             logger.error(f"Error generating SEO report: {str(e)}")
             return f"Error generating SEO report: {str(e)}"
-
+    
 def main():
     """Main function to test SEO optimizer."""
     logger.info("Testing SEO Optimizer")
@@ -750,3 +683,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
