@@ -11,3 +11,5 @@ __pycache__/
 *.md
 requirements.txt*.psd
 *.psd
+venv/
+.venv/
