@@ -7,3 +7,6 @@ __pycache__/
 .env
 .DS_Store
 .pod_automation_config.json
+*.json
+*.md
+requirements.txt*.psd
