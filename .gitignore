@@ -10,3 +10,4 @@ __pycache__/
 *.json
 *.md
 requirements.txt*.psd
+*.psd
