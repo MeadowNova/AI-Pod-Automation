@@ -1,15 +1,38 @@
-venv/
-__pycache__/
-*.pyc
-*.pyo
-*.pyd
-*.log
-.env
-.DS_Store
-.pod_automation_config.json
-*.json
-*.md
-requirements.txt*.psd
-*.psd
-venv/
+# Virtual environments
 .venv/
+venv/
+
+# Python cache and compiled files
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Logs
+*.log
+
+# Environment & config
+.env
+.envrc
+.pod_automation_config.json
+
+# MacOS & system
+.DS_Store
+Thumbs.db
+
+# Editor settings
+.vscode/
+.idea/
+
+# PSD and design files
+*.psd
+
+# Data storage files (optional, based on your use case)
+data/*.csv
+storage/**/*.json
+storage/**/*.sqlite
+
+# Test and coverage artifacts
+htmlcov/
+coverage.xml
+.cache/
+pytest_cache/
