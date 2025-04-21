@@ -1,0 +1,2 @@
+# Ignore cline rules settings to bypass secret scanning
+cline_mcp_settings.json
