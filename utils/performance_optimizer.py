@@ -32,8 +32,8 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # Import system
-from pod_automation_system import PODAutomationSystem
-from pod_automation.config import Config
+from main import PODAutomationSystem
+from config import Config
 
 class PerformanceOptimizer:
     """Optimizer for improving POD Automation System performance."""
@@ -643,7 +643,7 @@ class PerformanceOptimizer:
                 if self._original_trend_forecaster is not None:
                     return self._original_trend_forecaster
                 
-                from pod_automation.agents.trend_forecaster import TrendForecaster
+                from agents.trend_forecaster import TrendForecaster
                 return TrendForecaster(config={'data_dir': self.trends_dir})
             
             def get_prompt_optimizer(self):
@@ -651,7 +651,7 @@ class PerformanceOptimizer:
                 if self._original_prompt_optimizer is not None:
                     return self._original_prompt_optimizer
                 
-                from pod_automation.agents.prompt_optimizer import PromptOptimizer
+                from agents.prompt_optimizer import PromptOptimizer
                 return PromptOptimizer()
             
             def get_stable_diffusion(self):
@@ -659,7 +659,7 @@ class PerformanceOptimizer:
                 if self._original_stable_diffusion is not None:
                     return self._original_stable_diffusion
                 
-                from pod_automation.agents.stable_diffusion import create_stable_diffusion_client
+                from agents.stable_diffusion import create_stable_diffusion_client
                 api_key = self.config.get('stable_diffusion.api_key') or os.environ.get('OPENROUTER_API_KEY')
                 return create_stable_diffusion_client(
                     use_api=True,
@@ -672,7 +672,7 @@ class PerformanceOptimizer:
                 if self._original_design_pipeline is not None:
                     return self._original_design_pipeline
                 
-                from pod_automation.agents.design_generation import DesignGenerationPipeline
+                from agents.design_generation import DesignGenerationPipeline
                 return DesignGenerationPipeline(config={
                     'output_dir': self.designs_dir,
                     'trend_dir': self.trends_dir,
@@ -685,7 +685,7 @@ class PerformanceOptimizer:
                 if self._original_mockup_generator is not None:
                     return self._original_mockup_generator
                 
-                from pod_automation.agents.mockup_generator import MockupGenerator
+                from agents.mockup_generator import MockupGenerator
                 return MockupGenerator(config={
                     'designs_dir': self.designs_dir,
                     'output_dir': self.mockups_dir
@@ -696,7 +696,7 @@ class PerformanceOptimizer:
                 if self._original_publishing_agent is not None:
                     return self._original_publishing_agent
                 
-                from pod_automation.agents.publishing_agent import PublishingAgent
+                from agents.publishing_agent import PublishingAgent
                 return PublishingAgent(config={
                     'designs_dir': self.designs_dir,
                     'mockups_dir': self.mockups_dir,
@@ -713,7 +713,7 @@ class PerformanceOptimizer:
                 if self._original_seo_optimizer is not None:
                     return self._original_seo_optimizer
                 
-                from pod_automation.agents.seo_optimizer import SEOOptimizer
+                from agents.seo import SEOOptimizer
                 return SEOOptimizer(config={
                     'data_dir': self.seo_dir
                 })

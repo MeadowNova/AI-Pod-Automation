@@ -1,7 +1,10 @@
 """
-__init__.py for config package
+Config package initialization for pod_automation.
+This module provides access to configuration utilities for the POD Automation System.
 """
 
-from pod_automation.config.config import get_config, Config
+# Import and expose configuration modules
+from config.config import get_config, Config
+from config.default_config import DEFAULT_CONFIG
+from config.logging_config import setup_logging
 
-__all__ = ['get_config', 'Config']

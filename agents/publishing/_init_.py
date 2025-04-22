@@ -1,1 +1,1 @@
-from .publishing_agent import *
+from .publishing_agent import PublishingAgent

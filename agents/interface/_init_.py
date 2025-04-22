@@ -1,1 +1,1 @@
-from .airtable_sync import *
+from .airtable_sync import AirtableSync

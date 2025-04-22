@@ -1,1 +1,1 @@
-from .stable_diffusion import StableDiffusionAgent
+from .stable_diffusion import create_stable_diffusion_client
