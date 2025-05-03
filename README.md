@@ -1,15 +1,18 @@
-# POD Automation System - README
+# POD Automation System
 
-## Overview
-
-The POD Automation System is a comprehensive solution for automating print-on-demand (POD) product creation, publishing, SEO optimization, and promotion. The system integrates with Printify and Etsy to streamline the entire POD workflow.
+A comprehensive solution for automating print-on-demand (POD) product creation, publishing, SEO optimization, and promotion. The system integrates with Printify and Etsy to streamline the entire POD workflow.
 
 ## Features
 
+- **Trend Forecasting**: Analyze trending keywords and designs
+- **Design Generation**: Generate designs using Stable Diffusion
+- **Mockup Creation**: Create product mockups for various POD products
+- **SEO Optimization**: Optimize listings for better visibility
+- **Publishing**: Publish products to Printify and Etsy
+- **Dashboard**: Interactive dashboard for managing the entire workflow
 - **API Integrations**: Secure and optimized connections to Printify and Etsy APIs
 - **Print Provider Support**: Configured for Monster Digital (T-Shirts/Sweatshirts), Sensaria (Posters), and MWW (pillow cases)
 - **Performance Optimization**: Caching, rate limiting, retries, and batch processing
-- **Comprehensive Documentation**: Detailed guides for setup and usage
 
 ## Getting Started
 
@@ -30,14 +33,14 @@ git clone https://github.com/yourusername/pod-automation.git
 cd pod-automation
 ```
 
-2. Install dependencies:
+2. Install the package in development mode:
 ```bash
-pip install -r requirements.txt
+pip install -e .
 ```
 
 3. Set up API keys:
 ```bash
-python -m pod_automation.main --setup
+python -m pod_automation --setup
 ```
 
 #### Docker Development Environment
@@ -97,7 +100,7 @@ docker-compose -f docker-compose.yml -f docker-compose.prod.yml down
 To ensure your API connections are working correctly:
 
 ```bash
-python -m pod_automation.main --validate
+python -m pod_automation --validate
 ```
 
 ## Documentation
@@ -111,22 +114,49 @@ Detailed documentation is available in the `docs` directory:
 
 ```
 pod_automation/
-├── api/                  # API integration modules
+├── __init__.py           # Package initialization
+├── main.py               # Main entry point
+├── core/                 # Core functionality
+│   ├── __init__.py
+│   ├── system.py         # Main system class
+│   └── config.py         # Configuration management
+├── agents/               # Agent components
+│   ├── __init__.py
+│   ├── trend_forecaster.py
+│   ├── prompt_optimizer.py
+│   ├── design_generation.py
+│   ├── stable_diffusion.py
+│   ├── mockup_generator.py
+│   ├── publishing_agent.py
+│   ├── seo_optimizer.py
+│   └── autogen/          # Autogen agents subpackage
+│       ├── __init__.py
+│       ├── file_tools.py
+│       ├── planner_agent.py
+│       └── main.py
+├── api/                  # API integrations
 │   ├── __init__.py
 │   ├── printify_api.py   # Printify API client
-│   └── etsy_api.py       # Etsy API client
-├── config/               # Configuration management
-│   ├── __init__.py
-│   └── config.py         # Configuration utilities
+│   ├── etsy_api.py       # Etsy API client
+│   └── pinterest_api.py  # Pinterest API client
 ├── utils/                # Utility functions
 │   ├── __init__.py
-│   └── api_optimization.py  # API optimization utilities
-├── tests/                # Test modules
+│   ├── api_optimization.py  # API optimization utilities
+│   └── logging_config.py # Logging configuration
+├── dashboard/            # Dashboard functionality
 │   ├── __init__.py
-│   └── test_api_integration.py  # API integration tests
-├── docs/                 # Documentation
-│   └── api_integration.md  # API integration documentation
-└── main.py               # Main entry point
+│   └── dashboard.py      # Streamlit dashboard
+├── data/                 # Data directory
+│   ├── designs/          # Design files
+│   ├── mockups/          # Mockup files
+│   ├── trends/           # Trend data
+│   ├── seo/              # SEO data
+│   └── published/        # Published product data
+└── tests/                # Tests
+    ├── __init__.py
+    ├── test_api_integration.py
+    ├── test_components.py
+    └── test_system.py
 ```
 
 ## Usage
@@ -134,12 +164,33 @@ pod_automation/
 ### Basic Usage
 
 ```python
+from pod_automation import PODAutomationSystem
+
+# Initialize the system
+system = PODAutomationSystem()
+
+# Run the full pipeline
+results = system.run_full_pipeline(
+    keyword="cat lover",
+    product_types=["t-shirt", "poster"],
+    publish=False
+)
+
+# Print results
+print(f"Designs Generated: {len(results['designs'])}")
+total_mockups = sum(len(mockups) for mockups in results['mockups'].values())
+print(f"Mockups Created: {total_mockups}")
+```
+
+### API Usage
+
+```python
 from pod_automation.api import PrintifyAPI, EtsyAPI
 from pod_automation.utils import optimize_api_client
 
 # Initialize API clients
-printify = optimize_api_client(PrintifyAPI())
-etsy = optimize_api_client(EtsyAPI())
+printify = optimize_api_client(PrintifyAPI(api_key="your_printify_api_key"))
+etsy = optimize_api_client(EtsyAPI(api_key="your_etsy_api_key", api_secret="your_etsy_api_secret"))
 
 # Use the API clients to automate your POD workflow
 shop_info = printify.get_shop()
@@ -150,10 +201,16 @@ print(f"Connected to Printify shop: {shop_info.get('title')}")
 
 ```bash
 # Set up API connections
-python -m pod_automation.main --setup
+python -m pod_automation --setup
 
 # Validate API connections
-python -m pod_automation.main --validate
+python -m pod_automation --validate
+
+# Run the full pipeline
+python -m pod_automation --run --keyword "cat lover" --products "t-shirt,poster"
+
+# Run the interactive dashboard
+python -m pod_automation --dashboard
 ```
 
 ## Contributing
