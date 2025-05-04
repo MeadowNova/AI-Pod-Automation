@@ -1,0 +1,275 @@
+Metadata-Version: 2.4
+Name: pod-automation
+Version: 0.1.0
+Summary: Automation system for print-on-demand product creation and management
+Home-page: https://github.com/yourusername/pod-automation
+Author: POD Automation Team
+Author-email: info@podautomation.com
+Classifier: Programming Language :: Python :: 3
+Classifier: License :: OSI Approved :: MIT License
+Classifier: Operating System :: OS Independent
+Requires-Python: >=3.8
+Description-Content-Type: text/markdown
+Requires-Dist: requests>=2.25.0
+Requires-Dist: python-dotenv>=0.15.0
+Requires-Dist: pydantic>=1.9.0
+Requires-Dist: PyYAML>=6.0
+Requires-Dist: requests-oauthlib>=1.3.0
+Requires-Dist: authlib>=1.0.0
+Requires-Dist: airtable-python-wrapper>=0.14.0
+Requires-Dist: Pillow>=9.0.0
+Requires-Dist: opencv-python>=4.5.5
+Requires-Dist: openai>=0.27.0
+Requires-Dist: numpy>=1.22.0
+Requires-Dist: scikit-learn>=1.0.2
+Requires-Dist: torch>=1.10.0
+Requires-Dist: diffusers>=0.12.0
+Requires-Dist: streamlit>=1.10.0
+Requires-Dist: plotly>=5.6.0
+Requires-Dist: matplotlib>=3.5.0
+Requires-Dist: seaborn>=0.11.0
+Requires-Dist: flask>=2.0.0
+Requires-Dist: pandas>=1.4.0
+Requires-Dist: beautifulsoup4>=4.10.0
+Requires-Dist: lxml>=4.8.0
+Requires-Dist: pytest>=7.0.0
+Requires-Dist: pytest-cov>=3.0.0
+Requires-Dist: responses>=0.20.0
+Requires-Dist: psutil>=5.9.0
+Requires-Dist: cachetools>=5.0.0
+Requires-Dist: tqdm>=4.64.0
+Requires-Dist: colorama>=0.4.4
+Requires-Dist: python-slugify>=6.1.0
+Requires-Dist: setuptools>=60.0.0
+Dynamic: author
+Dynamic: author-email
+Dynamic: classifier
+Dynamic: description
+Dynamic: description-content-type
+Dynamic: home-page
+Dynamic: requires-dist
+Dynamic: requires-python
+Dynamic: summary
+
+# POD Automation System
+
+A comprehensive solution for automating print-on-demand (POD) product creation, publishing, SEO optimization, and promotion. The system integrates with Printify and Etsy to streamline the entire POD workflow.
+
+## Features
+
+- **Trend Forecasting**: Analyze trending keywords and designs
+- **Design Generation**: Generate designs using Stable Diffusion
+- **Mockup Creation**: Create product mockups for various POD products
+- **SEO Optimization**: Optimize listings for better visibility
+- **Publishing**: Publish products to Printify and Etsy
+- **Dashboard**: Interactive dashboard for managing the entire workflow
+- **API Integrations**: Secure and optimized connections to Printify and Etsy APIs
+- **Print Provider Support**: Configured for Monster Digital (T-Shirts/Sweatshirts), Sensaria (Posters), and MWW (pillow cases)
+- **Performance Optimization**: Caching, rate limiting, retries, and batch processing
+
+## Getting Started
+
+### Prerequisites
+
+- Python 3.8 or higher (for local development)
+- Docker and Docker Compose (for containerized development)
+- Printify account with API key
+- Etsy account with API key and secret
+
+### Installation
+
+#### Local Installation
+
+1. Clone the repository:
+```bash
+git clone https://github.com/yourusername/pod-automation.git
+cd pod-automation
+```
+
+2. Install the package in development mode:
+```bash
+pip install -e .
+```
+
+3. Set up API keys:
+```bash
+python -m pod_automation --setup
+```
+
+#### Docker Development Environment
+
+For a containerized development environment with live code reloading:
+
+1. Make sure Docker and Docker Compose are installed on your system
+
+2. Run the development script:
+```bash
+./dev.sh
+```
+
+3. Access the Streamlit dashboard at http://localhost:8501
+
+4. Make changes to your code and see them reflected immediately in the browser
+
+5. View logs with:
+```bash
+docker-compose -f docker-compose.dev.yml logs -f
+```
+
+6. Stop the development environment:
+```bash
+docker-compose -f docker-compose.dev.yml down
+```
+
+#### Docker Production Deployment
+
+For deploying to production with Docker:
+
+1. Configure your production environment variables (API keys, etc.)
+
+2. Deploy using the production configuration:
+```bash
+docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+```
+
+3. The production setup includes:
+   - Resource limits (CPU and memory)
+   - Improved logging configuration
+   - Read-only filesystem with specific writable paths
+   - Enhanced security settings
+
+4. Monitor the application:
+```bash
+docker-compose -f docker-compose.yml -f docker-compose.prod.yml logs -f
+```
+
+5. Stop the production environment:
+```bash
+docker-compose -f docker-compose.yml -f docker-compose.prod.yml down
+```
+
+### Validating API Connections
+
+To ensure your API connections are working correctly:
+
+```bash
+python -m pod_automation --validate
+```
+
+## Documentation
+
+Detailed documentation is available in the `docs` directory:
+
+- [API Integration Guide](docs/api_integration.md): Comprehensive guide to the Printify and Etsy API integrations
+- [Usage Examples](docs/examples.md): Examples of common workflows
+
+## Project Structure
+
+```
+pod_automation/
+├── __init__.py           # Package initialization
+├── main.py               # Main entry point
+├── core/                 # Core functionality
+│   ├── __init__.py
+│   ├── system.py         # Main system class
+│   └── config.py         # Configuration management
+├── agents/               # Agent components
+│   ├── __init__.py
+│   ├── trend_forecaster.py
+│   ├── prompt_optimizer.py
+│   ├── design_generation.py
+│   ├── stable_diffusion.py
+│   ├── mockup_generator.py
+│   ├── publishing_agent.py
+│   ├── seo_optimizer.py
+│   └── autogen/          # Autogen agents subpackage
+│       ├── __init__.py
+│       ├── file_tools.py
+│       ├── planner_agent.py
+│       └── main.py
+├── api/                  # API integrations
+│   ├── __init__.py
+│   ├── printify_api.py   # Printify API client
+│   ├── etsy_api.py       # Etsy API client
+│   └── pinterest_api.py  # Pinterest API client
+├── utils/                # Utility functions
+│   ├── __init__.py
+│   ├── api_optimization.py  # API optimization utilities
+│   └── logging_config.py # Logging configuration
+├── dashboard/            # Dashboard functionality
+│   ├── __init__.py
+│   └── dashboard.py      # Streamlit dashboard
+├── data/                 # Data directory
+│   ├── designs/          # Design files
+│   ├── mockups/          # Mockup files
+│   ├── trends/           # Trend data
+│   ├── seo/              # SEO data
+│   └── published/        # Published product data
+└── tests/                # Tests
+    ├── __init__.py
+    ├── test_api_integration.py
+    ├── test_components.py
+    └── test_system.py
+```
+
+## Usage
+
+### Basic Usage
+
+```python
+from pod_automation import PODAutomationSystem
+
+# Initialize the system
+system = PODAutomationSystem()
+
+# Run the full pipeline
+results = system.run_full_pipeline(
+    keyword="cat lover",
+    product_types=["t-shirt", "poster"],
+    publish=False
+)
+
+# Print results
+print(f"Designs Generated: {len(results['designs'])}")
+total_mockups = sum(len(mockups) for mockups in results['mockups'].values())
+print(f"Mockups Created: {total_mockups}")
+```
+
+### API Usage
+
+```python
+from pod_automation.api import PrintifyAPI, EtsyAPI
+from pod_automation.utils import optimize_api_client
+
+# Initialize API clients
+printify = optimize_api_client(PrintifyAPI(api_key="your_printify_api_key"))
+etsy = optimize_api_client(EtsyAPI(api_key="your_etsy_api_key", api_secret="your_etsy_api_secret"))
+
+# Use the API clients to automate your POD workflow
+shop_info = printify.get_shop()
+print(f"Connected to Printify shop: {shop_info.get('title')}")
+```
+
+### Command-line Interface
+
+```bash
+# Set up API connections
+python -m pod_automation --setup
+
+# Validate API connections
+python -m pod_automation --validate
+
+# Run the full pipeline
+python -m pod_automation --run --keyword "cat lover" --products "t-shirt,poster"
+
+# Run the interactive dashboard
+python -m pod_automation --dashboard
+```
+
+## Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+## License
+
+This project is licensed under the MIT License - see the LICENSE file for details.

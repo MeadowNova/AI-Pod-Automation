@@ -414,3 +414,25 @@ def create_stable_diffusion_client(use_api=True, api_key=None, api_url=None, mod
         return StableDiffusionAPI(api_key=api_key, api_url=api_url, config=config)
     else:
         return StableDiffusionLocal(model_path=model_path, config=config)
+
+def main():
+    """Main function to test Stable Diffusion integration."""
+    logger.info("Testing Stable Diffusion integration")
+    
+    # Create Stable Diffusion client pointing to local Automatic1111
+    sd_client = create_stable_diffusion_client(
+        use_api=True,
+        api_url="http://192.168.1.13:7860/sdapi/v1/txt2img"
+    )
+    
+    # Test image generation
+    prompt = "A modern t-shirt design with a colorful abstract pattern"
+    success, result = sd_client.generate_image(prompt)
+    
+    if success:
+        logger.info(f"Image generated successfully: {result}")
+    else:
+        logger.error(f"Image generation failed: {result}")
+
+if __name__ == "__main__":
+    main()

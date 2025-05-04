@@ -1,169 +1,136 @@
 """
-Configuration module for POD Automation System.
-Handles loading and saving configuration values.
-Prioritizes environment variables for sensitive data.
+Configuration management for POD Automation System.
+Handles loading, saving, and accessing configuration values.
 """
 
 import os
 import json
 import logging
 from pathlib import Path
+from typing import Any, Dict, Optional, Union
 
 logger = logging.getLogger(__name__)
 
-# Map of config keys to environment variable names
-ENV_VAR_MAPPING = {
-    "api.printify.api_key": "PRINTIFY_API_KEY",
-    "api.printify.shop_id": "PRINTIFY_SHOP_ID",
-    "api.etsy.api_key": "ETSY_API_KEY",
-    "api.etsy.api_secret": "ETSY_API_SECRET",
-    "api.etsy.shop_id": "ETSY_SHOP_ID",
-    "api.pinterest.api_key": "PINTEREST_API_KEY",
-    "api.openrouter.api_key": "OPENROUTER_API_KEY"
-}
-
 class Config:
     """Configuration manager for POD Automation System."""
-    
-    def __init__(self, config_file=None):
+
+    def __init__(self, config_path: Optional[str] = None):
         """Initialize configuration manager.
-        
+
         Args:
-            config_file (str, optional): Path to configuration file
+            config_path: Path to configuration file (optional)
         """
-        if config_file is None:
-            # Use default config file in user's home directory
-            self.config_file = os.path.join(str(Path.home()), '.pod_automation_config.json')
-        else:
-            self.config_file = config_file
-        
-        self.config = {}
+        self.config_path = config_path or os.path.join(
+            os.path.expanduser("~"), ".pod_automation_config.json"
+        )
+        self.config_dir = os.path.dirname(self.config_path)
+        self.config: Dict[str, Any] = {}
+
+        # Create config directory if it doesn't exist and if we're using a directory
+        if self.config_dir:
+            os.makedirs(self.config_dir, exist_ok=True)
+
+        # Load configuration
         self.load_config()
-    
-    def load_config(self):
-        """Load configuration from file."""
+
+    def load_config(self) -> Dict[str, Any]:
+        """Load configuration from file.
+
+        Returns:
+            Dict containing configuration values
+        """
         try:
-            if os.path.exists(self.config_file):
-                with open(self.config_file, 'r') as f:
+            if os.path.exists(self.config_path):
+                with open(self.config_path, "r") as f:
                     self.config = json.load(f)
-                logger.debug(f"Loaded configuration from {self.config_file}")
+                logger.info(f"Loaded configuration from {self.config_path}")
             else:
-                logger.debug(f"Configuration file {self.config_file} not found. Using default configuration.")
+                logger.info(f"Configuration file {self.config_path} not found, using defaults")
                 self.config = {}
         except Exception as e:
             logger.error(f"Error loading configuration: {str(e)}")
             self.config = {}
-    
-    def save_config(self):
-        """Save configuration to file."""
+
+        return self.config
+
+    def save_config(self) -> bool:
+        """Save configuration to file.
+
+        Returns:
+            bool: True if successful, False otherwise
+        """
         try:
-            # Create directory if it doesn't exist
-            os.makedirs(os.path.dirname(os.path.abspath(self.config_file)), exist_ok=True)
-            
-            with open(self.config_file, 'w') as f:
+            with open(self.config_path, "w") as f:
                 json.dump(self.config, f, indent=2)
-            logger.debug(f"Saved configuration to {self.config_file}")
+            logger.info(f"Saved configuration to {self.config_path}")
             return True
         except Exception as e:
             logger.error(f"Error saving configuration: {str(e)}")
             return False
-    
-    def get(self, key, default=None):
-        """Get configuration value.
-        
-        Args:
-            key (str): Configuration key (dot notation supported)
-            default: Default value if key not found
-            
-        Returns:
-            Configuration value or default if not found
-        """
-        # First check if there's an environment variable for this key
-        if key in ENV_VAR_MAPPING:
-            env_value = os.environ.get(ENV_VAR_MAPPING[key])
-            if env_value is not None:
-                return env_value
-        
-        # Fall back to config file
-        # Handle dot notation (e.g., "api.printify.api_key")
-        keys = key.split('.')
-        value = self.config
-        
-        for k in keys:
-            if isinstance(value, dict) and k in value:
-                value = value[k]
-            else:
-                return default
-        
-        return value
-    
-    def set(self, key, value):
-        """Set configuration value.
-        
-        Args:
-            key (str): Configuration key (dot notation supported)
-            value: Configuration value
-            
-        Returns:
-            bool: True if successful, False otherwise
-        """
-        # Handle dot notation (e.g., "api.printify.api_key")
-        keys = key.split('.')
-        config = self.config
-        
-        # Navigate to the correct nested dictionary
-        for k in keys[:-1]:
-            if k not in config:
-                config[k] = {}
-            elif not isinstance(config[k], dict):
-                config[k] = {}
-            config = config[k]
-        
-        # Set the value
-        config[keys[-1]] = value
-        return True
-    
-    def delete(self, key):
-        """Delete configuration value.
-        
-        Args:
-            key (str): Configuration key (dot notation supported)
-            
-        Returns:
-            bool: True if successful, False otherwise
-        """
-        # Handle dot notation (e.g., "api.printify.api_key")
-        keys = key.split('.')
-        config = self.config
-        
-        # Navigate to the correct nested dictionary
-        for k in keys[:-1]:
-            if k not in config or not isinstance(config[k], dict):
-                return False
-            config = config[k]
-        
-        # Delete the value
-        if keys[-1] in config:
-            del config[keys[-1]]
-            return True
-        
-        return False
 
-# Singleton instance
+    def get(self, key: str, default: Any = None) -> Any:
+        """Get configuration value.
+
+        Args:
+            key: Configuration key (dot notation supported)
+            default: Default value if key not found
+
+        Returns:
+            Configuration value or default
+        """
+        # Handle dot notation (e.g., "api.printify.api_key")
+        if "." in key:
+            parts = key.split(".")
+            current = self.config
+
+            for part in parts[:-1]:
+                if part not in current or not isinstance(current[part], dict):
+                    return default
+                current = current[part]
+
+            return current.get(parts[-1], default)
+
+        return self.config.get(key, default)
+
+    def set(self, key: str, value: Any) -> None:
+        """Set configuration value.
+
+        Args:
+            key: Configuration key (dot notation supported)
+            value: Configuration value
+        """
+        # Handle dot notation (e.g., "api.printify.api_key")
+        if "." in key:
+            parts = key.split(".")
+            current = self.config
+
+            for part in parts[:-1]:
+                if part not in current:
+                    current[part] = {}
+                elif not isinstance(current[part], dict):
+                    current[part] = {}
+
+                current = current[part]
+
+            current[parts[-1]] = value
+        else:
+            self.config[key] = value
+
+# Global configuration instance
 _config_instance = None
 
-def get_config(config_file=None):
-    """Get configuration manager instance.
-    
+def get_config(config_path: Optional[str] = None) -> Config:
+    """Get global configuration instance.
+
     Args:
-        config_file (str, optional): Path to configuration file
-        
+        config_path: Path to configuration file (optional)
+
     Returns:
-        Config: Configuration manager instance
+        Config instance
     """
     global _config_instance
-    
-    if _config_instance is None:
-        _config_instance = Config(config_file)
-    
+
+    if _config_instance is None or config_path is not None:
+        _config_instance = Config(config_path)
+
     return _config_instance

@@ -1,0 +1,2 @@
+[console_scripts]
+pod-automation = pod_automation.main:main

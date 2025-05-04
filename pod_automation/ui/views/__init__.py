@@ -1,5 +1,3 @@
 """
-UI Views module.
-
-This module provides the views for the user interface.
+Views for POD Automation System dashboard.
 """

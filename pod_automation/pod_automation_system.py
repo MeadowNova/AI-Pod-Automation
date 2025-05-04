@@ -1,6 +1,6 @@
 """
-Main system module for POD Automation System.
-Integrates all components and provides the main functionality.
+Main integration module for POD Automation System.
+Ensures all components work together seamlessly.
 """
 
 import os
@@ -12,12 +12,26 @@ from datetime import datetime
 from pathlib import Path
 import argparse
 
-# Import utilities
-from pod_automation.utils.logging_config import get_logger
-from pod_automation.core.config import get_config, Config
+# Set up logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.FileHandler("pod_automation.log"),
+        logging.StreamHandler()
+    ]
+)
+logger = logging.getLogger(__name__)
 
-# Initialize logger
-logger = get_logger(__name__)
+# Import components
+from pod_automation.agents.trend.trend_forecaster import TrendForecaster
+from pod_automation.agents.prompt_optimizer import PromptOptimizer
+from pod_automation.agents.stable_diffusion import create_stable_diffusion_client
+from pod_automation.agents.design.design_generation import DesignGenerationPipeline
+from pod_automation.agents.mockup.mockup_generator import MockupGenerator
+from pod_automation.agents.publishing.publishing_agent import PublishingAgent
+from pod_automation.agents.seo.seo_optimizer import SEOOptimizer
+from pod_automation.config import get_config, Config
 
 class PODAutomationSystem:
     """Main class for POD Automation System integration."""
@@ -64,15 +78,6 @@ class PODAutomationSystem:
     def initialize_components(self):
         """Initialize all components."""
         logger.info("Initializing all components")
-        
-        # Import components here to avoid circular imports
-        from pod_automation.agents.trend.trend_forecaster import TrendForecaster
-        from pod_automation.agents.prompt_optimizer import PromptOptimizer
-        from pod_automation.agents.stable_diffusion import create_stable_diffusion_client
-        from pod_automation.agents.design.design_generation import DesignGenerationPipeline
-        from pod_automation.agents.mockup.mockup_generator import MockupGenerator
-        from pod_automation.agents.publishing.publishing_agent import PublishingAgent
-        from pod_automation.agents.seo.seo_optimizer import SEOOptimizer
         
         # Initialize trend forecaster
         if self.trend_forecaster is None:
@@ -323,10 +328,10 @@ class PODAutomationSystem:
         
         try:
             # Import dashboard module
-            from pod_automation.dashboard.dashboard import Dashboard
+            from pod_automation.dashboard import Dashboard
             
             # Create and run dashboard
-            dashboard = Dashboard(system=self)
+            dashboard = Dashboard()
             dashboard.run_dashboard()
             
             return True
@@ -334,3 +339,64 @@ class PODAutomationSystem:
         except Exception as e:
             logger.error(f"Error running dashboard: {str(e)}")
             return False
+
+def main():
+    """Main function for POD Automation System."""
+    parser = argparse.ArgumentParser(description="POD Automation System")
+    
+    # Add arguments
+    parser.add_argument('--setup', action='store_true', help='Set up API keys')
+    parser.add_argument('--validate', action='store_true', help='Validate API connections')
+    parser.add_argument('--run', action='store_true', help='Run full pipeline')
+    parser.add_argument('--dashboard', action='store_true', help='Run interactive dashboard')
+    parser.add_argument('--keyword', type=str, default='cat lover', help='Base keyword for pipeline')
+    parser.add_argument('--products', type=str, default='t-shirt,poster', help='Product types (comma-separated)')
+    parser.add_argument('--publish', action='store_true', help='Publish products')
+    parser.add_argument('--config', type=str, help='Path to configuration file')
+    
+    # Parse arguments
+    args = parser.parse_args()
+    
+    # Create POD Automation System
+    system = PODAutomationSystem(config_path=args.config)
+    
+    # Process commands
+    if args.setup:
+        system.setup_api_keys()
+    
+    elif args.validate:
+        validation = system.validate_api_connections()
+        
+        print("\n--- API Connection Validation ---")
+        print(f"Printify API: {'Connected' if validation['printify'] else 'Not Connected'}")
+        print(f"Etsy API: {'Connected' if validation['etsy'] else 'Not Connected'}")
+        print(f"Stable Diffusion API: {'Connected' if validation['stable_diffusion'] else 'Not Connected'}")
+    
+    elif args.run:
+        product_types = args.products.split(',')
+        results = system.run_full_pipeline(
+            keyword=args.keyword,
+            product_types=product_types,
+            publish=args.publish
+        )
+        
+        print("\n--- Pipeline Results ---")
+        print(f"Keyword: {results['keyword']}")
+        print(f"Product Types: {', '.join(results['product_types'])}")
+        print(f"Designs Generated: {len(results['designs'])}")
+        
+        total_mockups = sum(len(mockups) for mockups in results['mockups'].values())
+        print(f"Mockups Created: {total_mockups}")
+        
+        if args.publish:
+            print(f"Products Published: {len(results['published_products'])}")
+    
+    elif args.dashboard:
+        system.run_dashboard()
+    
+    else:
+        # Default to running dashboard
+        system.run_dashboard()
+
+if __name__ == "__main__":
+    main()

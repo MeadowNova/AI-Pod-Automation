@@ -1,7 +1,10 @@
 """
-__init__.py for config package
+Configuration handling for the POD AI Automation system.
 """
 
-from pod_automation.config.config import get_config, Config
+from pod_automation.config.config import Config, get_config
 
-__all__ = ['get_config', 'Config']
+__all__ = [
+    'Config',
+    'get_config'
+]

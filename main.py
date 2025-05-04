@@ -5,7 +5,7 @@ This is a simple wrapper that calls the main function from the pod_automation pa
 """
 
 import sys
-from pod_automation.main import main
+from pod_automation.pod_automation_system import main
 
 if __name__ == "__main__":
     sys.exit(main())
