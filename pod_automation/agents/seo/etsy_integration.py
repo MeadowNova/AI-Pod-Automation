@@ -267,8 +267,25 @@ class EtsyIntegration:
                 listing_data['description'] = db_listing.get('description_optimized')
 
             if db_listing.get('tags_optimized'):
-                # Etsy expects tags as a list of strings
-                listing_data['tags'] = db_listing.get('tags_optimized')
+                # Try sending tags as a simple array of strings
+                tags = db_listing.get('tags_optimized', [])
+                # Sanitize tags - only use simple alphanumeric tags
+                import re
+                sanitized_tags = []
+                for tag in tags:
+                    # Replace underscores with spaces (Etsy might expect spaces instead)
+                    tag = tag.replace('_', ' ')
+                    # Remove any characters that aren't alphanumeric or spaces
+                    tag = re.sub(r'[^a-zA-Z0-9 ]', '', tag)
+                    tag = tag.strip()
+                    if tag:  # Only add non-empty tags
+                        sanitized_tags.append(tag)
+
+                # Limit to 13 tags (Etsy's maximum)
+                sanitized_tags = sanitized_tags[:13]
+
+                # Send as an array
+                listing_data['tags'] = sanitized_tags
 
             # Update listing on Etsy
             response = self.etsy.update_listing(etsy_listing_id, listing_data)
