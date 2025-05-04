@@ -56,12 +56,14 @@ class EtsyIntegration:
                 logger.error("Etsy access token not set. Authentication required.")
                 return []
 
-            # Fetch listings from Etsy API - use string for includes parameter instead of list
+            # Fetch listings from Etsy API
+            # Note: We're not using the 'includes' parameter because it causes 400 Bad Request errors
+            # The Etsy API v3 documentation doesn't clearly specify the correct format for this parameter
+            # If additional data is needed, we can fetch it separately using the listing ID
             response = self.etsy.get_listings(
                 state="active",
                 limit=limit,
-                offset=offset,
-                includes="Images,Shop,Tags"  # Changed from list to comma-separated string
+                offset=offset
             )
 
             if not response:
