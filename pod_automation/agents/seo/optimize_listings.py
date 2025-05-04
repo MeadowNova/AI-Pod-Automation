@@ -1,9 +1,15 @@
 import re
+import logging
 from datetime import datetime
 from pod_automation.agents.seo.seo_optimizer import SEOOptimizer
+from pod_automation.agents.seo.tag_optimizer import TagOptimizer
 
-# Initialize the SEO optimizer
-optimizer = SEOOptimizer()
+# Set up logging
+logger = logging.getLogger(__name__)
+
+# Initialize the optimizers
+seo_optimizer = SEOOptimizer()
+tag_optimizer = TagOptimizer()
 
 def clean_tags(tag_input):
     """Cleans a string or list of tags into a list of non-empty strings."""
@@ -13,7 +19,7 @@ def clean_tags(tag_input):
         return [t.strip() for t in tag_input.split(',') if t and t.strip()]
     return []
 
-def optimize_listing(input_data):
+def optimize_listing(input_data, use_advanced_tag_optimizer=False):
     """
     Optimizes listing details (tags, title, description) based on input data.
 
@@ -23,6 +29,7 @@ def optimize_listing(input_data):
             - description (str): The original listing description.
             - tags (str or list): Comma-separated string or list of tags.
             - product_type (str, optional): The type of product (e.g., 'tshirt'). Defaults to 'tshirt'.
+        use_advanced_tag_optimizer (bool, optional): Whether to use the advanced tag optimizer. Defaults to False.
 
     Returns:
         dict: A dictionary containing the optimized listing details:
@@ -55,25 +62,30 @@ def optimize_listing(input_data):
     elif title_words:
         base_keyword = title_words[0]
 
-    # Optimize tags using SEOOptimizer (with fallback to original tags if failure)
+    # Optimize tags using the appropriate optimizer (with fallback to original tags if failure)
     try:
-        optimized_tags = optimizer.optimize_tags(base_keyword, product_type)
+        if use_advanced_tag_optimizer:
+            logger.info("Using advanced tag optimizer")
+            optimized_tags = tag_optimizer.optimize_tags(raw_tags, title, product_type)
+        else:
+            logger.info("Using standard SEO optimizer for tags")
+            optimized_tags = seo_optimizer.optimize_tags(base_keyword, product_type)
     except Exception as e:
-        print(f"Error generating optimized tags: {e}")
+        logger.error(f"Error generating optimized tags: {e}")
         optimized_tags = raw_tags
 
     # Optimize title (fallback to original title if needed)
     try:
-        optimized_title = optimizer.optimize_title(base_keyword, product_type, optimized_tags)
+        optimized_title = seo_optimizer.optimize_title(base_keyword, product_type, optimized_tags)
     except Exception as e:
-        print(f"Error optimizing title: {e}")
+        logger.error(f"Error optimizing title: {e}")
         optimized_title = title
 
     # Optimize description (fallback to original description if needed)
     try:
-        optimized_description = optimizer.optimize_description(base_keyword, product_type, optimized_tags)
+        optimized_description = seo_optimizer.optimize_description(base_keyword, product_type, optimized_tags)
     except Exception as e:
-        print(f"Error optimizing description: {e}")
+        logger.error(f"Error optimizing description: {e}")
         optimized_description = description
 
     return {
@@ -87,14 +99,31 @@ def optimize_listing(input_data):
 
 # Example usage for testing
 if __name__ == "__main__":
+    # Set up logging
+    logging.basicConfig(
+        level=logging.INFO,
+        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    )
+    
     test_data = {
         "title": "Funny Cat Shirt, Cute Gift for Cat Lovers",
         "description": "A hilarious t-shirt perfect for anyone who loves cats. Made from soft cotton.",
         "tags": "cat, funny shirt, gift, pet lover, feline",
         "product_type": "tshirt"
     }
-    optimized_data = optimize_listing(test_data)
-    print("--- Optimization Test ---")
+    
+    # Test with standard optimizer
+    print("\n=== Testing with Standard Optimizer ===\n")
+    standard_optimized = optimize_listing(test_data, use_advanced_tag_optimizer=False)
     import json
-    print(json.dumps(optimized_data, indent=2))
+    print(json.dumps(standard_optimized, indent=2))
+    
+    # Test with advanced tag optimizer
+    print("\n=== Testing with Advanced Tag Optimizer ===\n")
+    advanced_optimized = optimize_listing(test_data, use_advanced_tag_optimizer=True)
+    print(json.dumps(advanced_optimized, indent=2))
+    
+    print("\n=== Comparison ===\n")
+    print(f"Standard tags: {standard_optimized['tags']}")
+    print(f"Advanced tags: {advanced_optimized['tags']}")
     print("-----------------------")
