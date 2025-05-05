@@ -20,6 +20,14 @@ from pod_automation.utils.logging_config import setup_logging
 setup_logging()
 logger = logging.getLogger(__name__)
 
+# Import template manager
+try:
+    from .templates.template_manager import TemplateManager
+except ImportError:
+    # Handle the case where the template manager is not yet available
+    TemplateManager = None
+    logger.warning("TemplateManager not found. Description templates will not be used.")
+
 class SEOOptimizer:
     """Optimizer for enhancing Etsy listings with SEO."""
 
@@ -42,6 +50,18 @@ class SEOOptimizer:
         # Load templates
         self.title_templates = self._load_templates('title_templates')
         self.description_templates = self._load_templates('description_templates')
+
+        # Initialize template manager if available
+        if TemplateManager is not None:
+            try:
+                templates_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'templates')
+                self.template_manager = TemplateManager(templates_dir)
+                logger.info("Template manager initialized successfully")
+            except Exception as e:
+                logger.error(f"Error initializing template manager: {e}")
+                self.template_manager = None
+        else:
+            self.template_manager = None
 
     def _load_keywords(self):
         """Load keyword data from file or use default.
@@ -809,12 +829,6 @@ class SEOOptimizer:
         # Format product_type to be properly capitalized
         formatted_product_type = product_type.replace('_', ' ').title()
 
-        # Select a random description template
-        template = random.choice(self.description_templates)
-
-        # Replace placeholders
-        description = template.replace('{keyword}', base_keyword).replace('{product_type}', formatted_product_type)
-
         # Determine the pet type from the base keyword and title
         pet_type = "pet"
         if original_title is None:
@@ -824,6 +838,44 @@ class SEOOptimizer:
             pet_type = "cat"
         elif "dog" in base_keyword.lower() or "dog" in original_title.lower():
             pet_type = "dog"
+
+        # Generate the optimized intro paragraph
+        intro_text = self._generate_optimized_intro(base_keyword, product_type, pet_type, important_elements)
+
+        # Check if we should use template manager
+        if self.template_manager is not None:
+            try:
+                # Get appropriate template for product type
+                template = self.template_manager.get_template(product_type)
+
+                # If we have a template, use it
+                if template:
+                    # Extract product name from base keyword and product type
+                    product_name = f"{base_keyword} {formatted_product_type}"
+
+                    # Apply template with optimized intro
+                    description = self.template_manager.apply_template(
+                        template,
+                        intro_text,
+                        product_name=product_name,
+                        product_type=formatted_product_type,
+                        keywords=tags
+                    )
+
+                    logger.info(f"Applied template for {product_type}")
+                    logger.info(f"Generated optimized description (length: {len(description)})")
+                    return description
+
+            except Exception as e:
+                logger.error(f"Error applying template: {e}")
+                # Fall back to standard description generation
+
+        # If template manager is not available or failed, use standard method
+        # Select a random description template
+        template = random.choice(self.description_templates)
+
+        # Replace placeholders
+        description = template.replace('{keyword}', base_keyword).replace('{product_type}', formatted_product_type)
 
         # Replace generic pet references with specific pet type
         if pet_type == "cat":
@@ -894,6 +946,64 @@ class SEOOptimizer:
         logger.info(f"Generated optimized description (length: {len(description)})")
 
         return description
+
+    def _generate_optimized_intro(self, base_keyword, product_type, pet_type, important_elements):
+        """Generate an optimized introduction paragraph for a product description.
+
+        Args:
+            base_keyword (str): The base keyword for optimization
+            product_type (str): The product type
+            pet_type (str): The type of pet (cat, dog, pet)
+            important_elements (dict): Dictionary of important elements to preserve
+
+        Returns:
+            str: Optimized introduction paragraph
+        """
+        # Format product_type to be properly capitalized
+        formatted_product_type = product_type.replace('_', ' ').title()
+
+        # Get artist name if available
+        artist_name = important_elements.get('artist_name')
+
+        # Get art style if available
+        art_style = important_elements.get('art_style')
+
+        # Get unique elements if available
+        unique_elements = important_elements.get('unique_elements', [])
+
+        # Generate intro based on product type and available elements
+        if artist_name:
+            # Artist-inspired product
+            intro = f"Calling all {pet_type} lovers! This {artist_name} inspired {formatted_product_type} is purr-fect for showing your love for feline friends. "
+
+            if art_style:
+                intro += f"Featuring the iconic {art_style} style that made {artist_name} famous, "
+
+            if unique_elements:
+                elements_text = ", ".join(unique_elements[:2])
+                intro += f"this design showcases {elements_text} in a unique artistic interpretation. "
+
+            intro += f"Each {formatted_product_type} is carefully crafted to bring fine art into your everyday life."
+
+        elif "funny" in base_keyword.lower() or "humor" in base_keyword.lower():
+            # Funny product
+            intro = f"Show your sense of humor with this hilarious {base_keyword} {formatted_product_type}! "
+            intro += f"Perfect for {pet_type} lovers with a good sense of humor, this {formatted_product_type} is sure to get laughs and start conversations. "
+
+            if unique_elements:
+                elements_text = ", ".join(unique_elements[:2])
+                intro += f"Featuring {elements_text}, this design is both funny and stylish."
+
+        else:
+            # Standard product
+            intro = f"Show your love for {pet_type}s with this adorable {base_keyword} {formatted_product_type}! "
+            intro += f"Perfect for {pet_type} lovers, this {formatted_product_type} features a unique design that will make you stand out. "
+
+            if unique_elements:
+                elements_text = ", ".join(unique_elements[:2])
+                intro += f"The design showcases {elements_text}, making it a must-have for any {pet_type} enthusiast."
+
+        return intro
 
     def optimize_listing(self, base_keyword, product_type):
         """Optimize an Etsy listing with tags, title, and description."""
