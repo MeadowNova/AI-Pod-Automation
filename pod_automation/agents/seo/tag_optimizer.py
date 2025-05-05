@@ -295,7 +295,7 @@ class TagOptimizer:
         Returns:
             int: Score from 0-100
         """
-        score = 50  # Default score
+        score = 60  # Higher default score for our curated tags
 
         # Use instance erank_data if not provided
         if erank_data is None:
@@ -312,20 +312,77 @@ class TagOptimizer:
             # Adjust score based on competition (0-100, lower is better)
             competition = keyword_data.get("competition", 50)
             score += max(0, (100 - competition) / 5)  # Max 20 points for low competition
+        else:
+            # If no eRank data, use our own scoring logic
+
+            # Check for high-value keywords
+            high_value_terms = [
+                "gift", "present", "lover", "mom", "dad", "owner",
+                "unique", "handmade", "custom", "personalized",
+                "funny", "cute", "vintage", "retro", "aesthetic"
+            ]
+
+            # Check for product-specific terms
+            product_terms = [
+                "tshirt", "shirt", "tee", "art print", "wall art", "poster",
+                "mug", "cup", "pillow", "cushion", "hoodie", "sweatshirt"
+            ]
+
+            # Check for artist names
+            artist_terms = [
+                "van gogh", "klimt", "monet", "picasso", "dali", "warhol",
+                "banksy", "matisse", "impressionist", "art nouveau", "pop art"
+            ]
+
+            # Add points for high-value terms
+            for term in high_value_terms:
+                if term in tag.lower():
+                    score += 5
+                    break
+
+            # Add points for product-specific terms
+            for term in product_terms:
+                if term in tag.lower():
+                    score += 5
+                    break
+
+            # Add points for artist names (these are very valuable)
+            for term in artist_terms:
+                if term in tag.lower():
+                    score += 10
+                    break
 
         # Bonus points for specific categories
         category = self.categorize_tag(tag)
         if category == "product_descriptor":
-            score += 5
+            score += 8
         elif category == "gift_occasion":
-            score += 3
+            score += 10
+        elif category == "art_style":
+            score += 12
+        elif category == "style_aesthetic":
+            score += 7
         elif category == "seasonal_trending":
-            score += 2
+            score += 9
 
         # Bonus for long-tail keywords (3+ words)
         words = tag.split()
         if len(words) >= 3:
+            score += 8
+        elif len(words) == 2:
+            score += 4
+
+        # Penalty for very short or single-word tags (unless they're artist names)
+        if len(words) == 1 and tag.lower() not in ["klimt", "picasso", "dali", "monet", "warhol", "banksy", "matisse"]:
+            score -= 10
+
+        # Bonus for specific high-converting patterns
+        if re.search(r'(gift for|perfect for|great for)', tag.lower()):
+            score += 7
+        if re.search(r'(lover|enthusiast|fan)', tag.lower()):
             score += 5
+        if re.search(r'(unique|handmade|custom|personalized)', tag.lower()):
+            score += 6
 
         # Cap score at 100
         return min(score, 100)
@@ -376,58 +433,58 @@ class TagOptimizer:
         # Define base tags for each product category
         base_tags = {
             "tshirt": [
-                "funny cat shirt",
+                "graphic tshirt",
                 "cat lover gift",
-                "cat tshirt",
-                "cat lover tee",
-                "cat graphic tee",
-                "cat clothing",
-                "feline shirt"
+                "funny cat shirt",
+                "cat mom shirt",
+                "cat dad tshirt",
+                "unisex cat tee",
+                "cotton cat shirt"
             ],
             "art_print": [
-                "wall art",
-                "home decor",
-                "art print",
-                "funny art",
-                "art parody",
-                "wall decor",
-                "art poster"
+                "cat wall art",
+                "home wall decor",
+                "fine art print",
+                "gallery quality print",
+                "cat illustration",
+                "framed cat art",
+                "archival print"
             ],
             "mug": [
-                "coffee mug",
-                "funny mug",
-                "cat lover mug",
-                "ceramic mug",
-                "cat coffee cup",
-                "gift mug",
-                "cat mug"
+                "cat coffee mug",
+                "cat lover gift",
+                "ceramic cat mug",
+                "dishwasher safe mug",
+                "microwave safe mug",
+                "cat mom mug",
+                "cat dad mug"
             ],
             "pillow": [
-                "throw pillow",
-                "decorative pillow",
-                "cat pillow",
-                "home decor",
+                "cat throw pillow",
+                "home decor pillow",
+                "decorative cat pillow",
                 "cat lover gift",
-                "sofa cushion",
-                "cat decor"
+                "removable cover",
+                "machine washable",
+                "hidden zipper"
             ],
             "seasonal": [
-                "halloween decor",
-                "cat decoration",
-                "seasonal decor",
-                "holiday gift",
-                "cat lover gift",
-                "spooky decor",
-                "fall decoration"
+                "halloween cat decor",
+                "cat halloween decoration",
+                "fall cat decor",
+                "holiday cat gift",
+                "christmas cat decor",
+                "seasonal home decor",
+                "limited edition"
             ],
             "other": [
                 "cat lover gift",
-                "funny cat gift",
-                "cat themed",
-                "cat lover",
-                "cat gift",
-                "cat present",
-                "feline gift"
+                "handmade cat item",
+                "unique cat gift",
+                "cat owner present",
+                "small business",
+                "made in usa",
+                "fast shipping"
             ]
         }
 
@@ -504,30 +561,57 @@ class TagOptimizer:
         if detected_artist:
             if detected_artist == "van gogh":
                 design_specific_tags.extend([
-                    "van gogh parody",
+                    "van gogh inspired",
                     "starry night art",
-                    f"{detected_animal} art print",
-                    f"{detected_animal} wall art",
+                    "impressionist style",
+                    "art lover gift",
                     "famous painting",
-                    "art history"
+                    "museum quality"
                 ])
             elif detected_artist == "klimt":
                 design_specific_tags.extend([
-                    "klimt parody",
+                    "klimt inspired",
                     "the kiss art",
-                    f"{detected_animal} art print",
-                    "art nouveau",
+                    "art nouveau style",
+                    "gold leaf art",
                     "famous painting",
-                    "art history"
+                    "museum quality"
                 ])
             elif detected_artist == "monet":
                 design_specific_tags.extend([
-                    "monet parody",
+                    "monet inspired",
                     "water lilies art",
-                    f"{detected_animal} art print",
-                    "impressionist art",
+                    "impressionist style",
+                    "garden scene",
                     "famous painting",
-                    "art history"
+                    "museum quality"
+                ])
+            elif detected_artist == "picasso":
+                design_specific_tags.extend([
+                    "picasso inspired",
+                    "cubist style",
+                    "modern art",
+                    "abstract design",
+                    "famous painting",
+                    "museum quality"
+                ])
+            elif detected_artist == "dali":
+                design_specific_tags.extend([
+                    "dali inspired",
+                    "surrealist style",
+                    "melting clocks",
+                    "dream art",
+                    "famous painting",
+                    "museum quality"
+                ])
+            elif detected_artist == "warhol":
+                design_specific_tags.extend([
+                    "warhol inspired",
+                    "pop art style",
+                    "bright colors",
+                    "iconic art",
+                    "famous painting",
+                    "museum quality"
                 ])
 
         # Add theme-specific tags
@@ -537,27 +621,45 @@ class TagOptimizer:
                     f"business {detected_animal}",
                     f"office {detected_animal}",
                     f"{detected_animal} in suit",
-                    "work humor",
-                    "office humor",
-                    f"professional {detected_animal}"
+                    "coworker gift",
+                    "office decor",
+                    "desk accessory"
                 ])
             elif theme == "funny":
                 design_specific_tags.extend([
                     f"funny {detected_animal}",
-                    f"humorous {detected_animal}",
-                    f"{detected_animal} humor",
-                    "funny gift",
-                    "joke gift",
-                    "novelty gift"
+                    f"humorous gift",
+                    f"{detected_animal} lover gift",
+                    "novelty present",
+                    "gag gift",
+                    "conversation starter"
                 ])
             elif theme == "cute":
                 design_specific_tags.extend([
                     f"cute {detected_animal}",
                     f"adorable {detected_animal}",
-                    f"kawaii {detected_animal}",
-                    "cute gift",
-                    f"{detected_animal} lover",
-                    "animal lover gift"
+                    f"kawaii style",
+                    f"{detected_animal} lover gift",
+                    "sweet design",
+                    "animal lover present"
+                ])
+            elif theme == "vintage":
+                design_specific_tags.extend([
+                    f"vintage {detected_animal}",
+                    f"retro style",
+                    f"nostalgic design",
+                    "classic look",
+                    "old school",
+                    "distressed print"
+                ])
+            elif theme == "holiday":
+                design_specific_tags.extend([
+                    f"holiday {detected_animal}",
+                    f"christmas gift",
+                    f"seasonal design",
+                    "festive present",
+                    "holiday decor",
+                    "stocking stuffer"
                 ])
 
         # If we don't have enough design-specific tags, add from original tags and title

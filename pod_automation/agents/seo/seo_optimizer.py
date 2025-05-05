@@ -553,19 +553,85 @@ class SEOOptimizer:
                     if len(title) >= 120:
                         break
 
-        # If still under 120 characters, add some generic descriptive phrases
+        # If still under 120 characters, add some high-value descriptive phrases
         if len(title) < 120:
-            filler_phrases = [
-                "Premium Quality",
+            # Product-specific high-value phrases
+            product_specific_phrases = {
+                "tshirt": [
+                    "Soft Cotton Tee",
+                    "Unisex Fit",
+                    "Graphic Tshirt",
+                    "Printed in USA",
+                    "Comfortable Fit",
+                    "Durable Print",
+                    "Machine Washable",
+                    "Eco-Friendly Ink"
+                ],
+                "art_print": [
+                    "Gallery Quality",
+                    "Archival Paper",
+                    "Vibrant Colors",
+                    "Museum Quality",
+                    "Fine Art Print",
+                    "Acid-Free Paper",
+                    "Giclee Print",
+                    "Ready to Frame"
+                ],
+                "sweatshirt": [
+                    "Cozy Fleece",
+                    "Warm Hoodie",
+                    "Soft Interior",
+                    "Durable Stitching",
+                    "Kangaroo Pocket",
+                    "Ribbed Cuffs",
+                    "Preshrunk Fabric",
+                    "Pill-Resistant"
+                ],
+                "mug": [
+                    "Dishwasher Safe",
+                    "Microwave Safe",
+                    "11oz Ceramic",
+                    "Durable Print",
+                    "Lead-Free",
+                    "Chip-Resistant",
+                    "Double-Sided Print",
+                    "Glossy Finish"
+                ],
+                "pillow": [
+                    "Hidden Zipper",
+                    "Machine Washable",
+                    "Soft Polyester",
+                    "Vibrant Print",
+                    "Durable Cover",
+                    "Hypoallergenic",
+                    "Removable Insert",
+                    "Double-Sided Print"
+                ]
+            }
+
+            # General high-value phrases for any product
+            general_phrases = [
+                "Handmade in USA",
+                "Small Business",
                 "Fast Shipping",
-                "Perfect Gift Idea",
-                "Unique Design",
-                "Handcrafted with Care",
-                "Made to Order",
-                "Great Present",
+                "Eco-Friendly",
+                "Limited Edition",
+                "Exclusive Design",
+                "Custom Made",
                 "Satisfaction Guaranteed"
             ]
 
+            # Determine product category
+            product_category = "general"
+            for category in product_specific_phrases.keys():
+                if category in product_type.lower():
+                    product_category = category
+                    break
+
+            # Use product-specific phrases if available, otherwise use general phrases
+            filler_phrases = product_specific_phrases.get(product_category, general_phrases)
+
+            # Add phrases until we reach the minimum length
             for phrase in filler_phrases:
                 if phrase.lower() not in title.lower() and len(title) + len(f" | {phrase}") <= 135:
                     title += f" | {phrase}"
@@ -584,8 +650,31 @@ class SEOOptimizer:
 
         # Final check - if still under 120, add more descriptive text with pipes
         if len(title) < 120:
-            remaining_length = 120 - len(title)
-            filler = " | Perfect Gift | Unique Design | Fast Shipping"
+            remaining_length = 140 - len(title)
+
+            # Product-specific fillers
+            product_fillers = {
+                "tshirt": " | Soft Cotton | Unisex Fit | Graphic Tee | Durable Print | Made in USA",
+                "art_print": " | Gallery Quality | Fine Art | Vibrant Colors | Archival Paper | Ready to Frame",
+                "sweatshirt": " | Cozy Fleece | Warm Hoodie | Soft Interior | Durable | Preshrunk",
+                "mug": " | Ceramic | Dishwasher Safe | Microwave Safe | Durable Print | Lead-Free",
+                "pillow": " | Soft Cover | Machine Washable | Vibrant Print | Hidden Zipper | Removable Insert"
+            }
+
+            # Determine product category
+            product_category = "general"
+            for category in product_fillers.keys():
+                if category in product_type.lower():
+                    product_category = category
+                    break
+
+            # Use product-specific filler if available, otherwise use general filler
+            if product_category in product_fillers:
+                filler = product_fillers[product_category]
+            else:
+                filler = " | Handmade | Limited Edition | Fast Shipping | Exclusive Design | Small Business"
+
+            # Add filler up to the remaining length
             title += filler[:remaining_length]
 
         logger.info(f"Generated optimized title: {title}")
@@ -724,19 +813,19 @@ class SEOOptimizer:
     def _get_appropriate_style(self, product_type):
         """Get an appropriate style term based on product type."""
         if 'art' in product_type.lower() or 'print' in product_type.lower() or 'poster' in product_type.lower():
-            return random.choice(['Artistic', 'Creative', 'Modern', 'Contemporary', 'Minimalist'])
+            return random.choice(['Minimalist', 'Abstract', 'Impressionist', 'Pop Art', 'Modern Art', 'Contemporary', 'Watercolor', 'Digital Art'])
         elif 'shirt' in product_type.lower() or 'tee' in product_type.lower():
-            return random.choice(['Stylish', 'Trendy', 'Casual', 'Modern', 'Comfortable'])
+            return random.choice(['Vintage', 'Retro', 'Graphic', 'Funny', 'Cute', 'Aesthetic', 'Minimalist', 'Artistic'])
         elif 'hoodie' in product_type.lower() or 'sweatshirt' in product_type.lower():
-            return random.choice(['Cozy', 'Warm', 'Comfortable', 'Casual', 'Stylish'])
+            return random.choice(['Oversized', 'Vintage', 'Graphic', 'Aesthetic', 'Streetwear', 'Unisex', 'Retro', 'Minimalist'])
         elif 'pillow' in product_type.lower() or 'decor' in product_type.lower():
-            return random.choice(['Decorative', 'Stylish', 'Modern', 'Elegant', 'Chic'])
+            return random.choice(['Boho', 'Farmhouse', 'Modern', 'Minimalist', 'Scandinavian', 'Rustic', 'Coastal', 'Industrial'])
         elif 'mug' in product_type.lower() or 'cup' in product_type.lower():
-            return random.choice(['Stylish', 'Unique', 'Fun', 'Colorful', 'Ceramic'])
+            return random.choice(['Ceramic', 'Funny', 'Novelty', 'Personalized', 'Custom', 'Handmade', 'Microwave Safe', 'Dishwasher Safe'])
         elif 'tote' in product_type.lower() or 'bag' in product_type.lower():
-            return random.choice(['Stylish', 'Durable', 'Eco-Friendly', 'Reusable', 'Canvas'])
+            return random.choice(['Canvas', 'Organic', 'Eco-Friendly', 'Reusable', 'Recycled', 'Sustainable', 'Heavy Duty', 'Large Capacity'])
         else:
-            return random.choice(['Unique', 'Stylish', 'Modern', 'High-Quality', 'Premium'])
+            return random.choice(['Handmade', 'Custom', 'Personalized', 'Unique', 'Handcrafted', 'Limited Edition', 'Exclusive', 'One of a Kind'])
 
     def _get_design_feature(self, base_keyword, product_type):
         """Get an appropriate design feature based on keyword and product type."""
@@ -859,7 +948,8 @@ class SEOOptimizer:
                         intro_text,
                         product_name=product_name,
                         product_type=formatted_product_type,
-                        keywords=tags
+                        keywords=tags,
+                        base_keyword=base_keyword
                     )
 
                     logger.info(f"Applied template for {product_type}")
