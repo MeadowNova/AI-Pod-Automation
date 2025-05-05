@@ -19,6 +19,24 @@ def clean_tags(tag_input):
         return [t.strip() for t in tag_input.split(',') if t and t.strip()]
     return []
 
+def format_tags_for_etsy(tags):
+    """
+    Format tags for Etsy API submission.
+
+    Etsy requires tags to be a space-separated string with underscores for multi-word tags.
+
+    Args:
+        tags (list): List of tags with spaces
+
+    Returns:
+        str: Space-separated string with underscores for multi-word tags
+    """
+    # Replace spaces with underscores in each tag
+    formatted_tags = [tag.replace(' ', '_') for tag in tags]
+
+    # Join with spaces for Etsy's format
+    return ' '.join(formatted_tags)
+
 def extract_important_elements(title):
     """
     Extracts important elements from a title such as artist names, art styles,
@@ -289,8 +307,12 @@ def optimize_listing(input_data, use_advanced_tag_optimizer=True):
         logger.error(f"Error optimizing description: {e}")
         optimized_description = description
 
+    # Format tags for Etsy API (if needed)
+    etsy_formatted_tags = format_tags_for_etsy(optimized_tags)
+
     return {
         "tags": optimized_tags,
+        "tags_etsy_format": etsy_formatted_tags,
         "title": optimized_title,
         "description": optimized_description,
         "base_keyword": base_keyword,
@@ -391,4 +413,12 @@ if __name__ == "__main__":
     print(f"Art Print Tags: {result_3['tags']}")
     print(f"Non-Art Product Tags: {result_4['tags']}")
     print(f"Seasonal Product Tags: {result_5['tags']}")
+    print("-----------------------")
+
+    print("\n=== Etsy-Formatted Tags ===\n")
+    print(f"Regular Product Etsy Tags: {result_1['tags_etsy_format']}")
+    print(f"Artist-Inspired Etsy Tags: {result_2['tags_etsy_format']}")
+    print(f"Art Print Etsy Tags: {result_3['tags_etsy_format']}")
+    print(f"Non-Art Product Etsy Tags: {result_4['tags_etsy_format']}")
+    print(f"Seasonal Product Etsy Tags: {result_5['tags_etsy_format']}")
     print("-----------------------")
