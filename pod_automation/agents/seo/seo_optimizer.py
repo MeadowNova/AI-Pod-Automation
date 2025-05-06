@@ -445,6 +445,23 @@ class SEOOptimizer:
         if important_elements is None:
             important_elements = {}
 
+        # Determine the animal type from the base keyword and title
+        animal_type = "cat"  # Default animal
+        if original_title is None:
+            original_title = ""
+
+        # Check for different animals in the base keyword or original title
+        if "dog" in base_keyword.lower() or "dog" in original_title.lower():
+            animal_type = "dog"
+        elif "bird" in base_keyword.lower() or "bird" in original_title.lower():
+            animal_type = "bird"
+        elif "rabbit" in base_keyword.lower() or "bunny" in original_title.lower():
+            animal_type = "rabbit"
+        elif "fox" in base_keyword.lower() or "fox" in original_title.lower():
+            animal_type = "fox"
+        elif "wolf" in base_keyword.lower() or "wolf" in original_title.lower():
+            animal_type = "wolf"
+
         # Get product-specific templates if available
         product_specific_templates = self._get_product_specific_templates(product_type)
 
@@ -453,6 +470,11 @@ class SEOOptimizer:
 
         # Select a random title template
         template = random.choice(templates_to_use)
+
+        # Replace "Cat" with the appropriate animal in the template
+        if animal_type != "cat":
+            template = template.replace("Cat ", f"{animal_type.title()} ")
+            template = template.replace("cat ", f"{animal_type} ")
 
         # Format product_type to be properly capitalized
         formatted_product_type = product_type.replace('_', ' ').title()
@@ -694,104 +716,104 @@ class SEOOptimizer:
         product_templates = {
             # T-Shirt templates
             'tshirt': [
-                # Format: [Design Theme] T-Shirt | [Style/Mood] [Product Type] | [Occasion] Gift | [Recipient] Present | [Design Feature] Tee
-                "{keyword} T-Shirt | {style} {product_type} | {occasion} Gift | {recipient} Present | {design_feature} Tee",
-                "{artist} Inspired T-Shirt | {style} {product_type} | {occasion} Gift | {recipient} Present | {design_feature} Tee",
-                "Funny {keyword} T-Shirt | Humorous {product_type} | Coworker Gift | {recipient} Present | {design_feature} Tee",
-                "Cute {keyword} T-Shirt | Adorable {product_type} | Birthday Gift | {recipient} Present | {design_feature} Tee",
-                "{keyword} T-Shirt | Vintage Style Tee | Holiday Gift | {recipient} Present | Retro Design Shirt"
+                # Format: [High Value Keyword] | [Design Theme] T-Shirt | [Style/Mood] [Product Type] | [Occasion] Gift | [Recipient] Present | [Design Feature]
+                "Cat Lover T-Shirt | {keyword} Tee | {style} {product_type} | {occasion} Gift | {recipient} Present | {design_feature}",
+                "Cat Mom Shirt | {artist} Inspired Tee | {style} {product_type} | {occasion} Gift | {recipient} Present | {design_feature}",
+                "Funny Cat T-Shirt | {keyword} Tee | Humorous {product_type} | Coworker Gift | {recipient} Present | {design_feature}",
+                "Cat Dad Gift | Cute {keyword} Tee | Adorable {product_type} | Birthday Present | {recipient} Gift | {design_feature}",
+                "Vintage Cat Shirt | {keyword} Tee | Retro Style {product_type} | Holiday Gift | {recipient} Present | {design_feature}"
             ],
             't-shirt': [
-                # Format: [Design Theme] T-Shirt | [Style/Mood] [Product Type] | [Occasion] Gift | [Recipient] Present | [Design Feature] Tee
-                "{keyword} T-Shirt | {style} {product_type} | {occasion} Gift | {recipient} Present | {design_feature} Tee",
-                "{artist} Inspired T-Shirt | {style} {product_type} | {occasion} Gift | {recipient} Present | {design_feature} Tee",
-                "Funny {keyword} T-Shirt | Humorous {product_type} | Coworker Gift | {recipient} Present | {design_feature} Tee",
-                "Cute {keyword} T-Shirt | Adorable {product_type} | Birthday Gift | {recipient} Present | {design_feature} Tee",
-                "{keyword} T-Shirt | Vintage Style Tee | Holiday Gift | {recipient} Present | Retro Design Shirt"
+                # Format: [High Value Keyword] | [Design Theme] T-Shirt | [Style/Mood] [Product Type] | [Occasion] Gift | [Recipient] Present | [Design Feature]
+                "Cat Lover T-Shirt | {keyword} Tee | {style} {product_type} | {occasion} Gift | {recipient} Present | {design_feature}",
+                "Cat Mom Shirt | {artist} Inspired Tee | {style} {product_type} | {occasion} Gift | {recipient} Present | {design_feature}",
+                "Funny Cat T-Shirt | {keyword} Tee | Humorous {product_type} | Coworker Gift | {recipient} Present | {design_feature}",
+                "Cat Dad Gift | Cute {keyword} Tee | Adorable {product_type} | Birthday Present | {recipient} Gift | {design_feature}",
+                "Vintage Cat Shirt | {keyword} Tee | Retro Style {product_type} | Holiday Gift | {recipient} Present | {design_feature}"
             ],
             't_shirt': [
-                # Format: [Design Theme] T-Shirt | [Style/Mood] [Product Type] | [Occasion] Gift | [Recipient] Present | [Design Feature] Tee
-                "{keyword} T-Shirt | {style} {product_type} | {occasion} Gift | {recipient} Present | {design_feature} Tee",
-                "{artist} Inspired T-Shirt | {style} {product_type} | {occasion} Gift | {recipient} Present | {design_feature} Tee",
-                "Funny {keyword} T-Shirt | Humorous {product_type} | Coworker Gift | {recipient} Present | {design_feature} Tee",
-                "Cute {keyword} T-Shirt | Adorable {product_type} | Birthday Gift | {recipient} Present | {design_feature} Tee",
-                "{keyword} T-Shirt | Vintage Style Tee | Holiday Gift | {recipient} Present | Retro Design Shirt"
+                # Format: [High Value Keyword] | [Design Theme] T-Shirt | [Style/Mood] [Product Type] | [Occasion] Gift | [Recipient] Present | [Design Feature]
+                "Cat Lover T-Shirt | {keyword} Tee | {style} {product_type} | {occasion} Gift | {recipient} Present | {design_feature}",
+                "Cat Mom Shirt | {artist} Inspired Tee | {style} {product_type} | {occasion} Gift | {recipient} Present | {design_feature}",
+                "Funny Cat T-Shirt | {keyword} Tee | Humorous {product_type} | Coworker Gift | {recipient} Present | {design_feature}",
+                "Cat Dad Gift | Cute {keyword} Tee | Adorable {product_type} | Birthday Present | {recipient} Gift | {design_feature}",
+                "Vintage Cat Shirt | {keyword} Tee | Retro Style {product_type} | Holiday Gift | {recipient} Present | {design_feature}"
             ],
 
             # Art Print templates
             'art_print': [
-                # Format: [Design Theme] Wall Art | [Style] [Art Type] | [Room] Decor | [Occasion] Gift | [Art Style] Print | [Size] Poster
-                "{keyword} Wall Art | {style} {art_type} | {room} Decor | {occasion} Gift | {art_style} Print | {size} Poster",
-                "{artist} Inspired Wall Art | {style} {art_type} | {room} Decor | {occasion} Gift | {art_style} Print | {size} Poster",
-                "{keyword} Wall Art | Funny Art Parody | Living Room Decor | {recipient} Gift | {art_style} Print | {size} Poster",
-                "{keyword} Wall Art | Minimalist {art_type} | Home Office Decor | Birthday Gift | {art_style} Print | {size} Poster",
-                "{artist} Style Wall Art | {style} {art_type} | Bedroom Decor | Holiday Gift | Fine Art Print | {size} Poster"
+                # Format: [High Value Keyword] | [Design Theme] Wall Art | [Style] [Art Type] | [Room] Decor | [Occasion] Gift | [Art Style] Print
+                "Cat Wall Art | {keyword} Print | {style} {art_type} | {room} Decor | {occasion} Gift | {art_style} Print",
+                "Cat Home Decor | {artist} Inspired Art | {style} {art_type} | {room} Decor | {occasion} Gift | {art_style} Print",
+                "Funny Cat Wall Art | {keyword} Print | Humorous Art | Living Room Decor | {recipient} Gift | {art_style} Print",
+                "Cat Mom Gift | {keyword} Wall Art | Minimalist {art_type} | Home Office Decor | Birthday Gift | {art_style} Print",
+                "Cat Dad Present | {artist} Style Art | {style} {art_type} | Bedroom Decor | Holiday Gift | Fine Art Print"
             ],
             'poster': [
-                # Format: [Design Theme] Wall Art | [Style] [Art Type] | [Room] Decor | [Occasion] Gift | [Art Style] Print | [Size] Poster
-                "{keyword} Wall Art | {style} {art_type} | {room} Decor | {occasion} Gift | {art_style} Print | {size} Poster",
-                "{artist} Inspired Wall Art | {style} {art_type} | {room} Decor | {occasion} Gift | {art_style} Print | {size} Poster",
-                "{keyword} Wall Art | Funny Art Parody | Living Room Decor | {recipient} Gift | {art_style} Print | {size} Poster",
-                "{keyword} Wall Art | Minimalist {art_type} | Home Office Decor | Birthday Gift | {art_style} Print | {size} Poster",
-                "{artist} Style Wall Art | {style} {art_type} | Bedroom Decor | Holiday Gift | Fine Art Print | {size} Poster"
+                # Format: [High Value Keyword] | [Design Theme] Wall Art | [Style] [Art Type] | [Room] Decor | [Occasion] Gift | [Art Style] Print
+                "Cat Wall Art | {keyword} Poster | {style} {art_type} | {room} Decor | {occasion} Gift | {art_style} Print",
+                "Cat Home Decor | {artist} Inspired Art | {style} {art_type} | {room} Decor | {occasion} Gift | {art_style} Print",
+                "Funny Cat Wall Art | {keyword} Poster | Humorous Art | Living Room Decor | {recipient} Gift | {art_style} Print",
+                "Cat Mom Gift | {keyword} Wall Art | Minimalist {art_type} | Home Office Decor | Birthday Gift | {art_style} Print",
+                "Cat Dad Present | {artist} Style Art | {style} {art_type} | Bedroom Decor | Holiday Gift | Fine Art Print"
             ],
             'wall_art': [
-                # Format: [Design Theme] Wall Art | [Style] [Art Type] | [Room] Decor | [Occasion] Gift | [Art Style] Print | [Size] Poster
-                "{keyword} Wall Art | {style} {art_type} | {room} Decor | {occasion} Gift | {art_style} Print | {size} Poster",
-                "{artist} Inspired Wall Art | {style} {art_type} | {room} Decor | {occasion} Gift | {art_style} Print | {size} Poster",
-                "{keyword} Wall Art | Funny Art Parody | Living Room Decor | {recipient} Gift | {art_style} Print | {size} Poster",
-                "{keyword} Wall Art | Minimalist {art_type} | Home Office Decor | Birthday Gift | {art_style} Print | {size} Poster",
-                "{artist} Style Wall Art | {style} {art_type} | Bedroom Decor | Holiday Gift | Fine Art Print | {size} Poster"
+                # Format: [High Value Keyword] | [Design Theme] Wall Art | [Style] [Art Type] | [Room] Decor | [Occasion] Gift | [Art Style] Print
+                "Cat Wall Art | {keyword} Print | {style} {art_type} | {room} Decor | {occasion} Gift | {art_style} Print",
+                "Cat Home Decor | {artist} Inspired Art | {style} {art_type} | {room} Decor | {occasion} Gift | {art_style} Print",
+                "Funny Cat Wall Art | {keyword} Print | Humorous Art | Living Room Decor | {recipient} Gift | {art_style} Print",
+                "Cat Mom Gift | {keyword} Wall Art | Minimalist {art_type} | Home Office Decor | Birthday Gift | {art_style} Print",
+                "Cat Dad Present | {artist} Style Art | {style} {art_type} | Bedroom Decor | Holiday Gift | Fine Art Print"
             ],
 
             # Sweatshirt/Hoodie templates
             'sweatshirt': [
-                # Format: [Design Theme] Sweatshirt | [Style/Mood] [Product Type] | [Season] Clothing | [Occasion] Gift | [Recipient] Present | Unisex Hoodie
-                "{keyword} Sweatshirt | {style} {product_type} | {season} Clothing | {occasion} Gift | {recipient} Present | Unisex Hoodie",
-                "{artist} Inspired Sweatshirt | {style} {product_type} | {season} Clothing | {occasion} Gift | {recipient} Present | Unisex Hoodie",
-                "Funny {keyword} Sweatshirt | Humorous {product_type} | Winter Clothing | Birthday Gift | {recipient} Present | Unisex Pullover",
-                "Cute {keyword} Sweatshirt | Adorable {product_type} | Fall Clothing | Holiday Gift | {recipient} Present | Cozy Hoodie",
-                "{keyword} Sweatshirt | Vintage Style {product_type} | Spring Clothing | Christmas Gift | {recipient} Present | Unisex Pullover"
+                # Format: [High Value Keyword] | [Design Theme] Sweatshirt | [Style/Mood] [Product Type] | [Season] Clothing | [Occasion] Gift | [Recipient] Present
+                "Cat Lover Sweatshirt | {keyword} Hoodie | {style} {product_type} | {season} Clothing | {occasion} Gift | {recipient} Present",
+                "Cat Mom Hoodie | {artist} Inspired Sweatshirt | {style} {product_type} | {season} Clothing | {occasion} Gift | {recipient} Present",
+                "Funny Cat Sweatshirt | {keyword} Hoodie | Humorous {product_type} | Winter Clothing | Birthday Gift | {recipient} Present",
+                "Cat Dad Gift | Cute {keyword} Sweatshirt | Adorable {product_type} | Fall Clothing | Holiday Gift | {recipient} Present",
+                "Vintage Cat Hoodie | {keyword} Sweatshirt | Retro Style {product_type} | Spring Clothing | Christmas Gift | {recipient} Present"
             ],
             'hoodie': [
-                # Format: [Design Theme] Sweatshirt | [Style/Mood] [Product Type] | [Season] Clothing | [Occasion] Gift | [Recipient] Present | Unisex Hoodie
-                "{keyword} Sweatshirt | {style} {product_type} | {season} Clothing | {occasion} Gift | {recipient} Present | Unisex Hoodie",
-                "{artist} Inspired Sweatshirt | {style} {product_type} | {season} Clothing | {occasion} Gift | {recipient} Present | Unisex Hoodie",
-                "Funny {keyword} Sweatshirt | Humorous {product_type} | Winter Clothing | Birthday Gift | {recipient} Present | Unisex Pullover",
-                "Cute {keyword} Sweatshirt | Adorable {product_type} | Fall Clothing | Holiday Gift | {recipient} Present | Cozy Hoodie",
-                "{keyword} Sweatshirt | Vintage Style {product_type} | Spring Clothing | Christmas Gift | {recipient} Present | Unisex Pullover"
+                # Format: [High Value Keyword] | [Design Theme] Sweatshirt | [Style/Mood] [Product Type] | [Season] Clothing | [Occasion] Gift | [Recipient] Present
+                "Cat Lover Hoodie | {keyword} Sweatshirt | {style} {product_type} | {season} Clothing | {occasion} Gift | {recipient} Present",
+                "Cat Mom Sweatshirt | {artist} Inspired Hoodie | {style} {product_type} | {season} Clothing | {occasion} Gift | {recipient} Present",
+                "Funny Cat Hoodie | {keyword} Sweatshirt | Humorous {product_type} | Winter Clothing | Birthday Gift | {recipient} Present",
+                "Cat Dad Gift | Cute {keyword} Hoodie | Adorable {product_type} | Fall Clothing | Holiday Gift | {recipient} Present",
+                "Vintage Cat Sweatshirt | {keyword} Hoodie | Retro Style {product_type} | Spring Clothing | Christmas Gift | {recipient} Present"
             ],
             'pullover': [
-                # Format: [Design Theme] Sweatshirt | [Style/Mood] [Product Type] | [Season] Clothing | [Occasion] Gift | [Recipient] Present | Unisex Hoodie
-                "{keyword} Sweatshirt | {style} {product_type} | {season} Clothing | {occasion} Gift | {recipient} Present | Unisex Hoodie",
-                "{artist} Inspired Sweatshirt | {style} {product_type} | {season} Clothing | {occasion} Gift | {recipient} Present | Unisex Hoodie",
-                "Funny {keyword} Sweatshirt | Humorous {product_type} | Winter Clothing | Birthday Gift | {recipient} Present | Unisex Pullover",
-                "Cute {keyword} Sweatshirt | Adorable {product_type} | Fall Clothing | Holiday Gift | {recipient} Present | Cozy Hoodie",
-                "{keyword} Sweatshirt | Vintage Style {product_type} | Spring Clothing | Christmas Gift | {recipient} Present | Unisex Pullover"
+                # Format: [High Value Keyword] | [Design Theme] Sweatshirt | [Style/Mood] [Product Type] | [Season] Clothing | [Occasion] Gift | [Recipient] Present
+                "Cat Lover Pullover | {keyword} Sweatshirt | {style} {product_type} | {season} Clothing | {occasion} Gift | {recipient} Present",
+                "Cat Mom Sweatshirt | {artist} Inspired Pullover | {style} {product_type} | {season} Clothing | {occasion} Gift | {recipient} Present",
+                "Funny Cat Pullover | {keyword} Sweatshirt | Humorous {product_type} | Winter Clothing | Birthday Gift | {recipient} Present",
+                "Cat Dad Gift | Cute {keyword} Pullover | Adorable {product_type} | Fall Clothing | Holiday Gift | {recipient} Present",
+                "Vintage Cat Sweatshirt | {keyword} Pullover | Retro Style {product_type} | Spring Clothing | Christmas Gift | {recipient} Present"
             ],
 
             # Other product types with adapted templates
             'mug': [
-                "{keyword} Coffee Mug | {style} Ceramic Cup | Kitchen Accessory | {occasion} Gift | {recipient} Present | Dishwasher Safe",
-                "Funny {keyword} Mug | Humorous Ceramic Cup | Office Accessory | Coworker Gift | {recipient} Present | Microwave Safe",
-                "Cute {keyword} Mug | Adorable Coffee Cup | Home Accessory | Birthday Gift | {recipient} Present | Premium Ceramic"
+                "Cat Lover Mug | {keyword} Coffee Cup | {style} Ceramic | Kitchen Accessory | {occasion} Gift | {recipient} Present",
+                "Cat Mom Gift | Funny {keyword} Mug | Humorous Ceramic Cup | Office Accessory | Coworker Gift | {recipient} Present",
+                "Cat Dad Present | Cute {keyword} Mug | Adorable Coffee Cup | Home Accessory | Birthday Gift | {recipient} Present"
             ],
             'pillow': [
-                "{keyword} Throw Pillow | {style} Home Decor | Living Room Accessory | {occasion} Gift | {recipient} Present | Soft Cover",
-                "Decorative {keyword} Pillow | {style} Home Decor | Bedroom Accessory | Housewarming Gift | {recipient} Present | Removable Cover",
-                "Cute {keyword} Cushion | Adorable Home Decor | Sofa Accessory | Birthday Gift | {recipient} Present | Comfortable Insert"
+                "Cat Throw Pillow | {keyword} Cushion | {style} Home Decor | Living Room Accessory | {occasion} Gift | {recipient} Present",
+                "Cat Home Decor | Decorative {keyword} Pillow | {style} Cushion | Bedroom Accessory | Housewarming Gift | {recipient} Present",
+                "Cat Lover Gift | Cute {keyword} Pillow | Adorable Home Decor | Sofa Accessory | Birthday Gift | {recipient} Present"
             ],
             'tote': [
-                "{keyword} Tote Bag | {style} Shopping Bag | Eco-Friendly Accessory | {occasion} Gift | {recipient} Present | Durable Canvas",
-                "Funny {keyword} Tote | Humorous Shopping Bag | Reusable Accessory | Birthday Gift | {recipient} Present | Spacious Design",
-                "Cute {keyword} Bag | Adorable Tote | Everyday Accessory | Holiday Gift | {recipient} Present | Premium Quality"
+                "Cat Tote Bag | {keyword} Shopping Bag | {style} Canvas | Eco-Friendly Accessory | {occasion} Gift | {recipient} Present",
+                "Cat Mom Gift | Funny {keyword} Tote | Humorous Shopping Bag | Reusable Accessory | Birthday Gift | {recipient} Present",
+                "Cat Lover Present | Cute {keyword} Bag | Adorable Tote | Everyday Accessory | Holiday Gift | {recipient} Present"
             ],
 
             # Generic template for other product types
             'generic': [
-                "{keyword} {product_type} | {style} Design | Premium Quality | {occasion} Gift | {recipient} Present | Unique Item",
-                "Funny {keyword} {product_type} | Humorous Design | High Quality | Birthday Gift | {recipient} Present | Unique Item",
-                "Cute {keyword} {product_type} | Adorable Design | Premium Quality | Holiday Gift | {recipient} Present | Unique Item"
+                "Cat Lover Gift | {keyword} {product_type} | {style} Design | Premium Quality | {occasion} Gift | {recipient} Present",
+                "Cat Mom Present | Funny {keyword} {product_type} | Humorous Design | High Quality | Birthday Gift | {recipient} Present",
+                "Cat Dad Gift | Cute {keyword} {product_type} | Adorable Design | Premium Quality | Holiday Gift | {recipient} Present"
             ]
         }
 

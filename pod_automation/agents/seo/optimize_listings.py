@@ -422,3 +422,7 @@ if __name__ == "__main__":
     print(f"Non-Art Product Etsy Tags: {result_4['tags_etsy_format']}")
     print(f"Seasonal Product Etsy Tags: {result_5['tags_etsy_format']}")
     print("-----------------------")
+
+    # Print full description for the first example to see the template in action
+    print("\n=== Full Description Example ===\n")
+    print(result_1["description"])
