@@ -8,7 +8,10 @@ __pycache__/
 .DS_Store
 .pod_automation_config.json
 *.json
+# Allow README.md files
 *.md
+!README.md
+!*/README.md
 requirements.txt*.psd
 *.psd
 venv/
