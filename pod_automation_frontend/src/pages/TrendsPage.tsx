@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { MagnifyingGlassIcon, AdjustmentsHorizontalIcon, BookmarkIcon, SparklesIcon, TrashIcon, ChevronDownIcon, ChevronUpIcon, ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
-import Button from '../components/Button';
+import Button from '../components/Button'; // Import shared Button
 
 // Placeholder data for trends
 const trendsData = [
@@ -17,18 +17,14 @@ const savedTrendsData = [
   { id: 4, name: 'Synthwave Aesthetic', dateSaved: '2025-05-04' },
 ];
 
-// Mini Trend Graph Component
-interface MiniTrendGraphProps {
-  trend: 'up' | 'down' | 'stable';
-}
-
-const MiniTrendGraph = ({ trend }: MiniTrendGraphProps) => {
+// Mini Trend Graph Placeholder
+const MiniTrendGraph: React.FC<{ trend: 'up' | 'down' | 'stable' }> = ({ trend }) => {
   const Icon = trend === 'up' ? ChevronUpIcon : trend === 'down' ? ChevronDownIcon : AdjustmentsHorizontalIcon;
   const color = trend === 'up' ? 'text-success' : trend === 'down' ? 'text-error' : 'text-yellow-500';
   return <Icon className={`h-5 w-5 ${color}`} title={`Trend: ${trend}`} />;
 };
 
-const TrendsPage = () => {
+const TrendsPage: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [showSaved, setShowSaved] = useState(false); // State to toggle between trending and saved
 

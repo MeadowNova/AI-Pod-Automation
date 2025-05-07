@@ -1,32 +1,22 @@
-import { BellIcon, UserCircleIcon } from '@heroicons/react/24/outline';
-import ThemeToggle from './ThemeToggle';
-import Button from './Button';
+import React from 'react';
+import { Link } from 'react-router-dom';
+import { BellIcon, UserCircleIcon } from '@heroicons/react/24/outline'; // Using Heroicons as per style guide
 
-interface HeaderProps {
-  title?: string;
-}
-
-const Header = ({ title }: HeaderProps) => {
+const Header: React.FC = () => {
   return (
-    <header className="bg-white dark:bg-dark-bg text-light-text-secondary dark:text-dark-text-secondary p-4 shadow-md flex justify-between items-center">
-      {/* Page Title */}
+    <header className="bg-dark-bg text-dark-text-secondary p-4 shadow-md flex justify-between items-center">
+      {/* Logo Placeholder - Assuming it's part of the Sidebar or main layout */}
       <div>
-        {title && <h1 className="text-xl font-semibold text-light-text dark:text-dark-text">{title}</h1>}
+        <Link to="/" className="text-dark-text hover:text-primary-light">Home</Link>
       </div>
       <div className="flex items-center space-x-4">
-        <ThemeToggle />
-        <Button
-          variant="icon"
-          title="Notifications"
-          icon={BellIcon}
-        />
-        <Button
-          variant="outline"
-          className="flex items-center space-x-2"
-          icon={UserCircleIcon}
-        >
-          <span>User Profile</span>
-        </Button>
+        <button className="hover:text-dark-text">
+          <BellIcon className="h-6 w-6" />
+        </button>
+        <button className="flex items-center space-x-2 hover:text-dark-text">
+          <UserCircleIcon className="h-6 w-6" />
+          <span>User Profile</span> {/* Replace with actual user name/dropdown */}
+        </button>
       </div>
     </header>
   );

@@ -28,7 +28,7 @@ const FinalCTASection: React.FC = () => {
         <h2 className="text-3xl md:text-4xl font-bold text-light-text dark:text-dark-text mb-8">
           Ready to Supercharge Your Etsy POD Shop?
         </h2>
-        <Button variant="primary" to="/signup" className="text-xl px-8 py-4"> {/* Larger button */}
+        <Button variant="primary" to="/app" className="text-xl px-8 py-4"> {/* Larger button */}
           Start Your Free Trial Today
         </Button>
       </div>

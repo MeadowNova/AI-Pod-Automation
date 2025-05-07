@@ -1,24 +1,6 @@
 import React, { useState } from 'react';
 import { ArrowUpIcon, ArrowDownIcon, ArrowLeftIcon, ArrowRightIcon, PlusIcon, MinusIcon, PencilIcon, TrashIcon, ArrowRightCircleIcon } from '@heroicons/react/24/outline';
-
-// Reusable Button component (assuming it exists or is defined elsewhere)
-const Button: React.FC<{ children: React.ReactNode; variant?: 'primary' | 'secondary' | 'outline' | 'link' | 'icon'; className?: string; onClick?: () => void; title?: string }> = ({ children, variant = 'primary', className = '', onClick, title }) => {
-  const baseStyle = 'px-3 py-1.5 rounded-md font-medium transition-colors inline-flex items-center justify-center text-sm';
-  const primaryStyle = 'bg-primary text-dark-text hover:bg-primary-light';
-  const secondaryStyle = 'bg-gray-200 text-light-text hover:bg-gray-300 dark:bg-dark-card dark:text-dark-text dark:hover:bg-dark-border';
-  const outlineStyle = 'border border-gray-300 dark:border-dark-border text-light-text dark:text-dark-text hover:bg-gray-100 dark:hover:bg-dark-border';
-  const linkStyle = 'text-primary hover:underline dark:text-primary-light p-0 text-sm';
-  const iconStyle = 'p-1.5 text-light-text-secondary dark:text-dark-text-secondary hover:text-primary dark:hover:text-primary-light'; // Style for icon-only buttons
-
-  let styles = `${baseStyle} ${className}`;
-  if (variant === 'primary') styles += ` ${primaryStyle}`;
-  else if (variant === 'secondary') styles += ` ${secondaryStyle}`;
-  else if (variant === 'outline') styles += ` ${outlineStyle}`;
-  else if (variant === 'link') styles += ` ${linkStyle}`;
-  else if (variant === 'icon') styles = `${iconStyle} ${className}`; // Use specific style for icon buttons
-
-  return <button onClick={onClick} className={styles} title={title}>{children}</button>;
-};
+import Button from '../components/Button'; // Import shared Button
 
 // Placeholder data
 const products = [

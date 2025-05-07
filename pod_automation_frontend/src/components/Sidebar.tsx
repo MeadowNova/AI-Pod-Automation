@@ -1,3 +1,4 @@
+import React from 'react';
 import { NavLink } from 'react-router-dom';
 import {
   ChartBarIcon,
@@ -7,32 +8,27 @@ import {
   PhotoIcon,
   PuzzlePieceIcon,
   SparklesIcon,
-  ArrowLeftOnRectangleIcon
+  ArrowLeftOnRectangleIcon,
+  AdjustmentsHorizontalIcon // Using AdjustmentsHorizontalIcon for SEO, or another suitable one like TagIcon if available
 } from '@heroicons/react/24/outline';
-import Button from './Button';
 
-interface NavigationItem {
-  name: string;
-  href: string;
-  icon: React.ElementType;
-}
-
-const navigation: NavigationItem[] = [
-  { name: 'Dashboard', href: '/', icon: HomeIcon },
-  { name: 'Trends', href: '/trends', icon: LightBulbIcon },
-  { name: 'AI Studio', href: '/ai-studio', icon: SparklesIcon },
-  { name: 'Mockups', href: '/mockups', icon: PhotoIcon },
-  { name: 'Listings', href: '/listings', icon: PuzzlePieceIcon },
-  { name: 'Analytics', href: '/analytics', icon: ChartBarIcon },
-  { name: 'Settings', href: '/settings', icon: Cog6ToothIcon },
+const navigation = [
+  { name: 'Dashboard', href: '/app', icon: HomeIcon },
+  { name: 'Trends', href: '/app/trends', icon: LightBulbIcon },
+  { name: 'AI Studio', href: '/app/ai-studio', icon: SparklesIcon },
+  { name: 'Mockups', href: '/app/mockups', icon: PhotoIcon },
+  { name: 'Listings', href: '/app/listings', icon: PuzzlePieceIcon },
+  { name: 'SEO Optimizer', href: '/app/seo-optimizer', icon: AdjustmentsHorizontalIcon }, // Added SEO Optimizer link
+  { name: 'Analytics', href: '/app/analytics', icon: ChartBarIcon },
+  { name: 'Settings', href: '/app/settings', icon: Cog6ToothIcon },
 ];
 
-const Sidebar = () => {
+const Sidebar: React.FC = () => {
   return (
-    <aside className="bg-white dark:bg-dark-bg text-light-text-secondary dark:text-dark-text-secondary w-64 p-4 flex flex-col shadow-lg">
+    <aside className="bg-dark-bg text-dark-text-secondary w-64 p-4 flex flex-col shadow-lg">
       <div className="mb-8">
-        {/* Logo */}
-        <div className="text-primary dark:text-primary-light text-2xl font-bold text-center py-4">
+        {/* Logo Placeholder */}
+        <div className="text-dark-text text-2xl font-bold text-center py-4">
           POD Co-Pilot
         </div>
       </div>
@@ -43,8 +39,8 @@ const Sidebar = () => {
             to={item.href}
             className={({ isActive }) =>
               `group flex items-center px-3 py-2 text-sm font-medium rounded-md ${isActive
-                ? 'bg-light-bg dark:bg-dark-card text-primary dark:text-primary-light'
-                : 'hover:bg-light-bg dark:hover:bg-dark-card hover:text-primary dark:hover:text-primary-light'
+                ? 'bg-dark-card text-dark-text'
+                : 'hover:bg-dark-card hover:text-dark-text'
               }`
             }
           >
@@ -54,17 +50,15 @@ const Sidebar = () => {
         ))}
       </nav>
       <div className="mt-auto">
-        {/* Logout Button */}
-        <Button
-          variant="outline"
-          className="w-full justify-start"
-          icon={ArrowLeftOnRectangleIcon}
-        >
+        {/* Logout Button or User Info */}
+        <button className="group flex w-full items-center px-3 py-2 text-sm font-medium rounded-md hover:bg-dark-card hover:text-dark-text">
+          <ArrowLeftOnRectangleIcon className="mr-3 h-6 w-6 flex-shrink-0" aria-hidden="true" />
           Logout
-        </Button>
+        </button>
       </div>
     </aside>
   );
 };
 
 export default Sidebar;
+

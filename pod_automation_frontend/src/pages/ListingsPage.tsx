@@ -1,24 +1,6 @@
 import React, { useState } from 'react';
 import { SparklesIcon, CurrencyDollarIcon, EyeIcon, DocumentTextIcon, CloudArrowUpIcon } from '@heroicons/react/24/outline';
-
-// Reusable Button component (assuming it exists or is defined elsewhere)
-const Button: React.FC<{ children: React.ReactNode; variant?: 'primary' | 'secondary' | 'outline' | 'link' | 'icon'; className?: string; onClick?: () => void; title?: string }> = ({ children, variant = 'primary', className = '', onClick, title }) => {
-  const baseStyle = 'px-3 py-1.5 rounded-md font-medium transition-colors inline-flex items-center justify-center text-sm';
-  const primaryStyle = 'bg-primary text-dark-text hover:bg-primary-light';
-  const secondaryStyle = 'bg-gray-200 text-light-text hover:bg-gray-300 dark:bg-dark-card dark:text-dark-text dark:hover:bg-dark-border';
-  const outlineStyle = 'border border-gray-300 dark:border-dark-border text-light-text dark:text-dark-text hover:bg-gray-100 dark:hover:bg-dark-border';
-  const linkStyle = 'text-primary hover:underline dark:text-primary-light p-0 text-sm';
-  const iconStyle = 'p-1 text-light-text-secondary dark:text-dark-text-secondary hover:text-primary dark:hover:text-primary-light'; // Smaller padding for inline icons
-
-  let styles = `${baseStyle} ${className}`;
-  if (variant === 'primary') styles += ` ${primaryStyle}`;
-  else if (variant === 'secondary') styles += ` ${secondaryStyle}`;
-  else if (variant === 'outline') styles += ` ${outlineStyle}`;
-  else if (variant === 'link') styles += ` ${linkStyle}`;
-  else if (variant === 'icon') styles = `${iconStyle} ${className}`; // Use specific style for icon buttons
-
-  return <button onClick={onClick} className={styles} title={title}>{children}</button>;
-};
+import Button from '../components/Button'; // Import shared Button
 
 // Placeholder data
 const mockups = [
@@ -68,7 +50,7 @@ const ListingsPage: React.FC = () => {
                 onChange={(e) => setTitle(e.target.value)}
                 className="flex-grow p-2 border border-gray-300 rounded-l-md focus:outline-none focus:ring-2 focus:ring-primary dark:bg-dark-card dark:border-dark-border dark:text-dark-text"
               />
-              <Button variant="secondary" title="Get AI Suggestions" className="rounded-l-none rounded-r-md border-l-0 border-gray-300 dark:border-dark-border">
+              <Button variant="secondary" title="Get AI Suggestions" className="rounded-l-none rounded-r-md border-l-0 border-gray-300 dark:border-dark-border px-3 py-1.5">
                 <SparklesIcon className="h-5 w-5" />
               </Button>
             </div>
@@ -85,7 +67,7 @@ const ListingsPage: React.FC = () => {
                 onChange={(e) => setDescription(e.target.value)}
                 className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary dark:bg-dark-card dark:border-dark-border dark:text-dark-text"
               />
-              <Button variant="icon" title="Get AI Suggestions" className="absolute bottom-2 right-2">
+              <Button variant="icon" title="Get AI Suggestions" className="absolute bottom-2 right-2 p-1">
                 <SparklesIcon className="h-5 w-5" />
               </Button>
             </div>
@@ -103,7 +85,7 @@ const ListingsPage: React.FC = () => {
                 onChange={(e) => setTags(e.target.value)}
                 className="flex-grow p-2 border border-gray-300 rounded-l-md focus:outline-none focus:ring-2 focus:ring-primary dark:bg-dark-card dark:border-dark-border dark:text-dark-text"
               />
-              <Button variant="secondary" title="Get AI Suggestions" className="rounded-l-none rounded-r-md border-l-0 border-gray-300 dark:border-dark-border">
+              <Button variant="secondary" title="Get AI Suggestions" className="rounded-l-none rounded-r-md border-l-0 border-gray-300 dark:border-dark-border px-3 py-1.5">
                 <SparklesIcon className="h-5 w-5" />
               </Button>
             </div>

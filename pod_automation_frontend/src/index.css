@@ -18,5 +18,6 @@ html.dark {
 
 /* Add any custom base styles here */
 body {
-  @apply bg-light-bg dark:bg-dark-bg text-light-text dark:text-dark-text;
+  @apply bg-gray-100 dark:bg-dark-bg text-light-text dark:text-dark-text; /* Changed bg-light-bg to bg-gray-100 */
 }
+
