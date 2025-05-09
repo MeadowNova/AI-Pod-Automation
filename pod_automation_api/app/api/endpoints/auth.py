@@ -1,14 +1,12 @@
-from datetime import timedelta
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 
-from app.core.config import settings
-from app.core.security import create_access_token, create_refresh_token
+from app.adapters.auth_adapter import auth_service
 from app.schemas.token import RefreshRequest
 from app.schemas.user import UserCreate, UserLogin, AuthResponse, User
-from app.services.auth_service import authenticate_user, create_user, get_user_by_id
+from app.core.security import get_current_user
 
 router = APIRouter()
 
@@ -18,29 +16,26 @@ async def login(form_data: UserLogin) -> Any:
     """
     OAuth2 compatible token login, get an access token for future requests
     """
-    user = await authenticate_user(email=form_data.email, password=form_data.password)
-    if not user:
+    try:
+        auth_response = await auth_service.authenticate_user(
+            email=form_data.email,
+            password=form_data.password
+        )
+
+        if not auth_response:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Incorrect email or password",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+
+        return auth_response
+    except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect email or password",
+            detail=str(e),
             headers={"WWW-Authenticate": "Bearer"},
         )
-    
-    access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
-    refresh_token_expires = timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
-    
-    access_token = create_access_token(
-        subject=str(user.id), expires_delta=access_token_expires
-    )
-    refresh_token = create_refresh_token(
-        subject=str(user.id), expires_delta=refresh_token_expires
-    )
-    
-    return {
-        "access_token": access_token,
-        "refresh_token": refresh_token,
-        "user": user
-    }
 
 
 @router.post("/signup", response_model=AuthResponse, status_code=status.HTTP_201_CREATED)
@@ -48,23 +43,19 @@ async def signup(user_in: UserCreate) -> Any:
     """
     Create new user
     """
-    user = await create_user(user_in)
-    
-    access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
-    refresh_token_expires = timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
-    
-    access_token = create_access_token(
-        subject=str(user.id), expires_delta=access_token_expires
-    )
-    refresh_token = create_refresh_token(
-        subject=str(user.id), expires_delta=refresh_token_expires
-    )
-    
-    return {
-        "access_token": access_token,
-        "refresh_token": refresh_token,
-        "user": user
-    }
+    try:
+        auth_response = await auth_service.create_user(user_in)
+        return auth_response
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e),
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e),
+        )
 
 
 @router.post("/refresh", response_model=AuthResponse)
@@ -72,31 +63,30 @@ async def refresh_token(refresh_request: RefreshRequest) -> Any:
     """
     Refresh access token
     """
+    # This would validate the refresh token and get the user ID
+    # In a real implementation, you would verify this is a valid refresh token
+    # For now, we'll just return a 501 Not Implemented
+    raise HTTPException(
+        status_code=status.HTTP_501_NOT_IMPLEMENTED,
+        detail="Token refresh not implemented yet",
+    )
+
+
+@router.get("/me", response_model=User)
+async def get_current_user_info(current_user_id: str = Depends(get_current_user)) -> Any:
+    """
+    Get current user info
+    """
     try:
-        # This would validate the refresh token and get the user ID
-        # In a real implementation, you would verify this is a valid refresh token
-        # For now, we'll just assume it's valid and return a new access token
-        user_id = "123e4567-e89b-12d3-a456-426614174000"  # Placeholder
-        user = await get_user_by_id(user_id)
-        
-        access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
-        refresh_token_expires = timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
-        
-        access_token = create_access_token(
-            subject=str(user.id), expires_delta=access_token_expires
-        )
-        refresh_token = create_refresh_token(
-            subject=str(user.id), expires_delta=refresh_token_expires
-        )
-        
-        return {
-            "access_token": access_token,
-            "refresh_token": refresh_token,
-            "user": user
-        }
+        user = await auth_service.get_user_by_id(current_user_id)
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="User not found",
+            )
+        return user
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid refresh token",
-            headers={"WWW-Authenticate": "Bearer"},
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e),
         )

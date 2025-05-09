@@ -1,113 +1,146 @@
 from typing import Optional
 import uuid
 from datetime import datetime
+import logging
+from supabase import create_client, Client
 
+from app.core.config import settings
 from app.schemas.user import User, UserCreate, UserInDB
-from app.core.security import get_password_hash, verify_password
 
-# This is a placeholder for a database connection
-# In a real implementation, you would use Supabase or another database
-users_db = {}
+logger = logging.getLogger(__name__)
+
+# Initialize Supabase client
+try:
+    supabase: Client = create_client(settings.SUPABASE_URL, settings.SUPABASE_KEY)
+    logger.info("Connected to Supabase")
+except Exception as e:
+    logger.error(f"Failed to connect to Supabase: {str(e)}")
+    supabase = None
 
 
 async def get_user_by_email(email: str) -> Optional[UserInDB]:
     """
     Get a user by email
     """
-    # In a real implementation, you would query the database
-    for user_id, user in users_db.items():
-        if user.email == email:
-            return user
-    return None
+    if not supabase:
+        logger.error("Supabase client not initialized")
+        return None
+
+    try:
+        response = supabase.table("users").select("*").eq("email", email).execute()
+        users = response.data
+
+        if not users:
+            return None
+
+        user_data = users[0]
+        return UserInDB(
+            id=uuid.UUID(user_data["id"]),
+            email=user_data["email"],
+            name=user_data.get("name"),
+            avatar_url=user_data.get("avatar_url"),
+            created_at=datetime.fromisoformat(user_data["created_at"].replace("Z", "+00:00")),
+            hashed_password=user_data["password"]
+        )
+    except Exception as e:
+        logger.error(f"Error getting user by email: {str(e)}")
+        return None
 
 
 async def get_user_by_id(user_id: str) -> Optional[User]:
     """
     Get a user by ID
     """
-    # In a real implementation, you would query the database
-    if user_id in users_db:
-        user = users_db[user_id]
+    if not supabase:
+        logger.error("Supabase client not initialized")
+        return None
+
+    try:
+        response = supabase.table("users").select("*").eq("id", user_id).execute()
+        users = response.data
+
+        if not users:
+            return None
+
+        user_data = users[0]
         return User(
-            id=user.id,
-            email=user.email,
-            name=user.name,
-            avatar_url=user.avatar_url,
-            created_at=user.created_at
+            id=uuid.UUID(user_data["id"]),
+            email=user_data["email"],
+            name=user_data.get("name"),
+            avatar_url=user_data.get("avatar_url"),
+            created_at=datetime.fromisoformat(user_data["created_at"].replace("Z", "+00:00"))
         )
-    
-    # For development, return a mock user
-    return User(
-        id=uuid.UUID(user_id),
-        email="user@example.com",
-        name="Test User",
-        avatar_url=None,
-        created_at=datetime.utcnow()
-    )
+    except Exception as e:
+        logger.error(f"Error getting user by ID: {str(e)}")
+        return None
 
 
 async def authenticate_user(email: str, password: str) -> Optional[User]:
     """
-    Authenticate a user
+    Authenticate a user using Supabase Auth
     """
-    user = await get_user_by_email(email)
-    if not user:
+    if not supabase:
+        logger.error("Supabase client not initialized")
         return None
-    if not verify_password(password, user.hashed_password):
+
+    try:
+        # Use Supabase Auth to sign in
+        response = supabase.auth.sign_in_with_password({"email": email, "password": password})
+        user_data = response.user
+
+        if not user_data:
+            return None
+
+        return User(
+            id=uuid.UUID(user_data.id),
+            email=user_data.email,
+            name=user_data.user_metadata.get("name"),
+            avatar_url=user_data.user_metadata.get("avatar_url"),
+            created_at=datetime.fromisoformat(user_data.created_at.replace("Z", "+00:00"))
+        )
+    except Exception as e:
+        logger.error(f"Error authenticating user: {str(e)}")
         return None
-    return User(
-        id=user.id,
-        email=user.email,
-        name=user.name,
-        avatar_url=user.avatar_url,
-        created_at=user.created_at
-    )
 
 
 async def create_user(user_in: UserCreate) -> User:
     """
-    Create a new user
+    Create a new user using Supabase Auth
     """
-    # Check if user with this email already exists
-    existing_user = await get_user_by_email(user_in.email)
-    if existing_user:
-        raise ValueError("Email already registered")
-    
-    # Create new user
-    user_id = str(uuid.uuid4())
-    created_at = datetime.utcnow()
-    
-    # In a real implementation, you would store this in the database
-    users_db[user_id] = UserInDB(
-        id=uuid.UUID(user_id),
-        email=user_in.email,
-        name=user_in.name,
-        avatar_url=user_in.avatar_url,
-        created_at=created_at,
-        hashed_password=get_password_hash(user_in.password)
-    )
-    
-    return User(
-        id=uuid.UUID(user_id),
-        email=user_in.email,
-        name=user_in.name,
-        avatar_url=user_in.avatar_url,
-        created_at=created_at
-    )
+    if not supabase:
+        logger.error("Supabase client not initialized")
+        raise ValueError("Supabase client not initialized")
 
+    try:
+        # Check if user already exists
+        existing_user = await get_user_by_email(user_in.email)
+        if existing_user:
+            raise ValueError("Email already registered")
 
-# Helper functions for password hashing
-def get_password_hash(password: str) -> str:
-    """
-    Hash a password
-    """
-    # In a real implementation, you would use a proper password hashing library
-    return f"hashed_{password}"
+        # Create user with Supabase Auth
+        response = supabase.auth.sign_up({
+            "email": user_in.email,
+            "password": user_in.password,
+            "options": {
+                "data": {
+                    "name": user_in.name,
+                    "avatar_url": user_in.avatar_url
+                }
+            }
+        })
 
+        user_data = response.user
 
-def verify_password(plain_password: str, hashed_password: str) -> bool:
-    """
-    Verify a password against a hash
-    """
-    # In a real implementation, you would use a proper password hashing library
-    return hashed_password == f"hashed_{plain_password}"
+        if not user_data:
+            raise ValueError("Failed to create user")
+
+        return User(
+            id=uuid.UUID(user_data.id),
+            email=user_data.email,
+            name=user_data.user_metadata.get("name"),
+            avatar_url=user_data.user_metadata.get("avatar_url"),
+            created_at=datetime.fromisoformat(user_data.created_at.replace("Z", "+00:00"))
+        )
+    except Exception as e:
+        logger.error(f"Error creating user: {str(e)}")
+        raise ValueError(f"Error creating user: {str(e)}")
