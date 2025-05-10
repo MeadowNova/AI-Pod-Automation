@@ -1,47 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { ArrowPathIcon, SparklesIcon, InformationCircleIcon, DocumentTextIcon, CloudArrowUpIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import Button from '../components/Button'; // Import shared Button
-
-// Mock data - replace with API calls
-interface EtsyListing {
-  id: string;
-  title: string;
-  thumbnailUrl: string;
-  seoScore: number; // 0-100
-  status: 'Active' | 'Draft' | 'Inactive';
-  tags: string[];
-  description: string;
-}
-
-const mockListings: EtsyListing[] = [
-  {
-    id: '1',
-    title: 'Vintage Sunset T-Shirt - Retro 80s Style Graphic Tee',
-    thumbnailUrl: '/placeholder-image.png',
-    seoScore: 75,
-    status: 'Active',
-    tags: ['vintage t-shirt', 'retro shirt', '80s graphics', 'sunset tee', 'graphic tee'],
-    description: 'A super soft vintage-style t-shirt featuring a stunning retro sunset graphic. Perfect for 80s enthusiasts and lovers of unique graphic tees. Made from 100% cotton for maximum comfort.'
-  },
-  {
-    id: '2',
-    title: 'Funny Cat Mug - "I Need More Coffee" - Cute Pet Lover Gift',
-    thumbnailUrl: '/placeholder-image.png',
-    seoScore: 60,
-    status: 'Active',
-    tags: ['cat mug', 'funny coffee mug', 'pet lover gift', 'cute cat', 'coffee lover'],
-    description: 'Start your day with a smile with this hilarious cat mug! Features a cute cat illustration and the relatable phrase "I Need More Coffee". A great gift for any cat owner or coffee addict.'
-  },
-  {
-    id: '3',
-    title: 'Minimalist Line Art Print - Abstract Face Poster, Modern Wall Decor',
-    thumbnailUrl: '/placeholder-image.png',
-    seoScore: 85,
-    status: 'Draft',
-    tags: ['line art', 'abstract print', 'minimalist decor', 'modern wall art', 'face poster'],
-    description: 'Add a touch of modern elegance to your home with this minimalist line art print. Featuring an abstract face design, this poster is perfect for contemporary interiors. High-quality print on premium paper.'
-  },
-];
+import { EtsyService, SeoService } from '../api';
+import { EtsyListing } from '../api/models/EtsyListing';
+import { ListingOptimizationRequest } from '../api/models/ListingOptimizationRequest';
+import { ListingOptimizationResponse } from '../api/models/ListingOptimizationResponse';
+import { ApiError } from '../api/core/ApiError';
 
 interface SEOAnalysisDetail {
     score: number;
@@ -72,6 +36,7 @@ const SEOOptimizerPage: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [isLoadingListings, setIsLoadingListings] = useState(false);
   const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   // Form states for the selected listing
   const [currentTitle, setCurrentTitle] = useState('');
@@ -83,15 +48,28 @@ const SEOOptimizerPage: React.FC = () => {
   const [titleSuggestions, setTitleSuggestions] = useState<string[]>([]);
   const [tagSuggestions, setTagSuggestions] = useState<string[]>([]);
   const [descriptionSuggestions, setDescriptionSuggestions] = useState<string[]>([]);
-  
-  const [seoAnalysis, setSeoAnalysis] = useState<SEOAnalysisState>(initialSeoAnalysisState);
 
-  const fetchListings = () => {
+  const [seoAnalysis, setSeoAnalysis] = useState<SEOAnalysisState>(initialSeoAnalysisState);
+  const [optimizationResponse, setOptimizationResponse] = useState<ListingOptimizationResponse | null>(null);
+
+  const fetchListings = async () => {
     setIsLoadingListings(true);
-    setTimeout(() => {
-      setListings(mockListings);
+    setError(null);
+
+    try {
+      const response = await EtsyService.getEtsyListings();
+      if (response.data) {
+        setListings(response.data);
+      } else {
+        setListings([]);
+      }
+    } catch (err) {
+      console.error('Error fetching listings:', err);
+      setError(err instanceof ApiError ? err.message : 'Failed to fetch listings');
+      setListings([]);
+    } finally {
       setIsLoadingListings(false);
-    }, 1000);
+    }
   };
 
   useEffect(() => {
@@ -145,14 +123,61 @@ const SEOOptimizerPage: React.FC = () => {
     updateSeoAnalysis(currentTitle, newTags, currentDescription);
   };
 
-  const fetchAISuggestions = (type: 'title' | 'tags' | 'description') => {
+  const fetchAISuggestions = async (type: 'title' | 'tags' | 'description') => {
+    if (!selectedListing) return;
+
     setIsLoadingSuggestions(true);
-    setTimeout(() => {
-      if (type === 'title') setTitleSuggestions(['Optimized Title Example 1', 'Another Great Title Idea']);
-      if (type === 'tags') setTagSuggestions(['new tag 1', 'suggested tag 2', 'keyword idea']);
-      if (type === 'description') setDescriptionSuggestions(['This is an AI suggested description snippet that is much better.', 'Alternative description focusing on benefits.']);
+    setError(null);
+
+    try {
+      const request: ListingOptimizationRequest = {
+        listing_id: selectedListing.id,
+        current_title: currentTitle,
+        current_tags: currentTags,
+        current_description: currentDescription
+      };
+
+      const response = await SeoService.optimizeListing(request);
+      setOptimizationResponse(response);
+
+      // Update suggestions based on the optimization response
+      if (type === 'title' && response.optimized_title) {
+        setTitleSuggestions([response.optimized_title]);
+      }
+
+      if (type === 'tags' && response.optimized_tags) {
+        // Filter out tags that are already in the current tags
+        const newTagSuggestions = response.optimized_tags.filter(tag => !currentTags.includes(tag));
+        setTagSuggestions(newTagSuggestions);
+      }
+
+      if (type === 'description' && response.optimized_description) {
+        setDescriptionSuggestions([response.optimized_description]);
+      }
+
+      // Update SEO analysis based on the optimization response
+      if (response.seo_score !== undefined) {
+        const titleFeedback = response.recommendations?.find(r => r.category === 'title')?.feedback || 'No feedback available';
+        const tagsFeedback = response.recommendations?.find(r => r.category === 'tags')?.feedback || 'No feedback available';
+        const descriptionFeedback = response.recommendations?.find(r => r.category === 'description')?.feedback || 'No feedback available';
+
+        const titleScore = response.recommendations?.find(r => r.category === 'title')?.score || 0;
+        const tagsScore = response.recommendations?.find(r => r.category === 'tags')?.score || 0;
+        const descriptionScore = response.recommendations?.find(r => r.category === 'description')?.score || 0;
+
+        setSeoAnalysis({
+          overallScore: response.seo_score,
+          title: { score: titleScore, feedback: titleFeedback },
+          tags: { score: tagsScore, feedback: tagsFeedback, count: currentTags.length },
+          description: { score: descriptionScore, feedback: descriptionFeedback }
+        });
+      }
+    } catch (err) {
+      console.error('Error optimizing listing:', err);
+      setError(err instanceof ApiError ? err.message : 'Failed to optimize listing');
+    } finally {
       setIsLoadingSuggestions(false);
-    }, 1500);
+    }
   };
 
   const updateSeoAnalysis = (title: string, tags: string[], description: string) => {
@@ -177,7 +202,7 @@ const SEOOptimizerPage: React.FC = () => {
     if (description.toLowerCase().includes('cotton')) descScore += 10;
     descScore = Math.min(descScore, 100);
     overallScore += descScore * 0.3;
-    
+
     setSeoAnalysis({
         overallScore: Math.round(overallScore),
         title: { score: titleScore, feedback: titleFeedbackMessages.join(' ') || 'Looking good!' },
@@ -193,8 +218,22 @@ const SEOOptimizerPage: React.FC = () => {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentTitle, currentTags, currentDescription]);
 
-  const handleSaveDraft = () => { alert('Save Draft clicked (not implemented)'); };
-  const handlePublish = () => { alert('Publish to Etsy clicked (not implemented)'); };
+  const handleSaveDraft = () => {
+    alert('Save Draft clicked (not implemented in this version)');
+  };
+
+  const handlePublish = async () => {
+    if (!selectedListing) return;
+
+    try {
+      // In a real implementation, this would call the API to update the listing on Etsy
+      // For now, we'll just show a success message
+      alert('Changes would be published to Etsy (API integration pending)');
+    } catch (err) {
+      console.error('Error publishing to Etsy:', err);
+      setError(err instanceof ApiError ? err.message : 'Failed to publish to Etsy');
+    }
+  };
 
   return (
     <div className="flex flex-col lg:flex-row gap-6 h-full">
@@ -216,6 +255,14 @@ const SEOOptimizerPage: React.FC = () => {
         <div className="flex-grow overflow-y-auto space-y-3 pr-1">
           {isLoadingListings ? (
             <p className="text-light-text-secondary dark:text-dark-text-secondary">Loading listings...</p>
+          ) : error ? (
+            <div className="text-error p-3 border border-error/20 rounded-lg">
+              <p className="font-medium">Error loading listings</p>
+              <p className="text-sm">{error}</p>
+              <Button variant="outline" onClick={fetchListings} className="mt-2 text-sm">
+                Try Again
+              </Button>
+            </div>
           ) : filteredListings.length > 0 ? (
             filteredListings.map(listing => (
               <div
@@ -223,12 +270,21 @@ const SEOOptimizerPage: React.FC = () => {
                 onClick={() => handleSelectListing(listing)}
                 className={`p-3 border rounded-lg cursor-pointer hover:border-primary dark:hover:border-primary-light transition-colors flex items-center space-x-3 ${selectedListing?.id === listing.id ? 'border-primary dark:border-primary-light bg-primary-light/10 dark:bg-primary/10' : 'border-gray-200 dark:border-dark-border'}`}
               >
-                <img src={listing.thumbnailUrl} alt={listing.title} className="w-16 h-16 object-cover rounded-md bg-gray-200 dark:bg-dark-border" />
+                <img
+                  src={listing.thumbnail_url || '/placeholder-image.png'}
+                  alt={listing.title}
+                  className="w-16 h-16 object-cover rounded-md bg-gray-200 dark:bg-dark-border"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).src = '/placeholder-image.png';
+                  }}
+                />
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-light-text dark:text-dark-text truncate">{listing.title}</p>
                   <div className="flex items-center text-xs mt-1">
-                    <span className={`w-3 h-3 rounded-full mr-1.5 ${getSeoScoreColor(listing.seoScore)}`}></span>
-                    <span className="text-light-text-secondary dark:text-dark-text-secondary">{listing.seoScore}/100 | {listing.status}</span>
+                    <span className={`w-3 h-3 rounded-full mr-1.5 ${getSeoScoreColor(listing.seo_score || 0)}`}></span>
+                    <span className="text-light-text-secondary dark:text-dark-text-secondary">
+                      {listing.seo_score !== undefined ? `${listing.seo_score}/100` : 'No score'} | {listing.status || 'Unknown'}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -241,10 +297,17 @@ const SEOOptimizerPage: React.FC = () => {
 
       {/* Right Panel: Detailed Optimization View */}
       <div className="lg:w-2/3 bg-white dark:bg-dark-bg p-6 rounded-lg shadow space-y-6 overflow-y-auto">
+        {error && (
+          <div className="bg-error/10 border border-error/20 text-error p-4 rounded-lg mb-4">
+            <p className="font-medium">Error</p>
+            <p className="text-sm">{error}</p>
+          </div>
+        )}
+
         {selectedListing ? (
           <>
             <h2 className="text-xl font-semibold text-light-text dark:text-dark-text">Optimize: <span className="text-primary dark:text-primary-light">{selectedListing.title}</span></h2>
-            
+
             <div className="p-4 border border-gray-200 dark:border-dark-border rounded-lg">
                 <h3 className="text-lg font-semibold mb-2 text-light-text dark:text-dark-text">Overall SEO Score: {seoAnalysis.overallScore}/100</h3>
                 <div className="w-full bg-gray-200 rounded-full h-4 dark:bg-dark-border mb-2">
