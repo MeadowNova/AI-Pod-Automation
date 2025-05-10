@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { ArrowPathIcon, SparklesIcon, InformationCircleIcon, DocumentTextIcon, CloudArrowUpIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import Button from '../components/Button'; // Import shared Button
-import { EtsyService, SeoService } from '../api';
-import { EtsyListing } from '../api/models/EtsyListing';
-import { ListingOptimizationRequest } from '../api/models/ListingOptimizationRequest';
-import { ListingOptimizationResponse } from '../api/models/ListingOptimizationResponse';
+import type { EtsyListing } from '../api/models/EtsyListing';
+import type { ListingOptimizationRequest } from '../api/models/ListingOptimizationRequest';
+import type { ListingOptimizationResponse } from '../api/models/ListingOptimizationResponse';
 import { ApiError } from '../api/core/ApiError';
+// Import our service layer instead of direct API clients
+import * as EtsyServiceLayer from '../services/EtsyService';
+import * as SeoServiceLayer from '../services/SeoService';
 
 interface SEOAnalysisDetail {
     score: number;
@@ -53,14 +55,26 @@ const SEOOptimizerPage: React.FC = () => {
   const [optimizationResponse, setOptimizationResponse] = useState<ListingOptimizationResponse | null>(null);
 
   const fetchListings = async () => {
+    console.log('fetchListings function called');
     setIsLoadingListings(true);
     setError(null);
 
     try {
-      const response = await EtsyService.getEtsyListings();
+      // Use our service layer which handles API calls with fallback to mock data if needed
+      console.log('About to call EtsyServiceLayer.getEtsyListings()');
+      const response = await EtsyServiceLayer.getEtsyListings();
+      console.log('Response from EtsyServiceLayer:', response);
+
       if (response.data) {
+        console.log('Setting listings with data:', response.data);
         setListings(response.data);
+
+        // If using mock data, log this for development purposes
+        if (response.isMockData) {
+          console.info('Using mock Etsy listings data');
+        }
       } else {
+        console.log('No data in response, setting empty listings array');
         setListings([]);
       }
     } catch (err) {
@@ -69,6 +83,7 @@ const SEOOptimizerPage: React.FC = () => {
       setListings([]);
     } finally {
       setIsLoadingListings(false);
+      console.log('fetchListings completed');
     }
   };
 
@@ -137,22 +152,37 @@ const SEOOptimizerPage: React.FC = () => {
         current_description: currentDescription
       };
 
-      const response = await SeoService.optimizeListing(request);
+      console.log(`Requesting AI optimization for ${type} with data:`, request);
+
+      // Use our service layer to call the API
+      const { data: response, isMockData } = await SeoServiceLayer.optimizeListing(request);
       setOptimizationResponse(response);
+
+      // If using mock data, show a warning to the user
+      if (isMockData) {
+        console.warn('Using mock SEO optimization data - real AI optimization is not available');
+        setError('Using simulated data. The AI optimization service is not available.');
+      } else {
+        console.info('Successfully received real AI optimization data');
+      }
 
       // Update suggestions based on the optimization response
       if (type === 'title' && response.optimized_title) {
         setTitleSuggestions([response.optimized_title]);
+        console.log('Received optimized title:', response.optimized_title);
       }
 
       if (type === 'tags' && response.optimized_tags) {
         // Filter out tags that are already in the current tags
         const newTagSuggestions = response.optimized_tags.filter(tag => !currentTags.includes(tag));
         setTagSuggestions(newTagSuggestions);
+        console.log('Received optimized tags:', response.optimized_tags);
       }
 
       if (type === 'description' && response.optimized_description) {
         setDescriptionSuggestions([response.optimized_description]);
+        console.log('Received optimized description (first 100 chars):',
+          response.optimized_description.substring(0, 100) + '...');
       }
 
       // Update SEO analysis based on the optimization response
@@ -171,10 +201,18 @@ const SEOOptimizerPage: React.FC = () => {
           tags: { score: tagsScore, feedback: tagsFeedback, count: currentTags.length },
           description: { score: descriptionScore, feedback: descriptionFeedback }
         });
+
+        console.log('Updated SEO analysis with score:', response.seo_score);
       }
     } catch (err) {
       console.error('Error optimizing listing:', err);
-      setError(err instanceof ApiError ? err.message : 'Failed to optimize listing');
+      if (err instanceof ApiError) {
+        const errorMessage = `API Error (${err.status}): ${err.message}`;
+        setError(errorMessage);
+        console.error('API Error details:', err.body);
+      } else {
+        setError('Failed to optimize listing. Please try again later.');
+      }
     } finally {
       setIsLoadingSuggestions(false);
     }
@@ -271,7 +309,7 @@ const SEOOptimizerPage: React.FC = () => {
                 className={`p-3 border rounded-lg cursor-pointer hover:border-primary dark:hover:border-primary-light transition-colors flex items-center space-x-3 ${selectedListing?.id === listing.id ? 'border-primary dark:border-primary-light bg-primary-light/10 dark:bg-primary/10' : 'border-gray-200 dark:border-dark-border'}`}
               >
                 <img
-                  src={listing.thumbnail_url || '/placeholder-image.png'}
+                  src={listing.thumbnail_url && listing.thumbnail_url.length > 0 ? listing.thumbnail_url : '/placeholder-image.png'}
                   alt={listing.title}
                   className="w-16 h-16 object-cover rounded-md bg-gray-200 dark:bg-dark-border"
                   onError={(e) => {
