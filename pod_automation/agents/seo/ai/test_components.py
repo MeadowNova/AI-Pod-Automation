@@ -20,13 +20,20 @@ def test_ollama_client():
 
     print("\nTesting Ollama Client...")
 
-    # Initialize client
-    client = OllamaClient(model="qwen3:8b")
+    # Initialize client with separate models for generation and embeddings
+    client = OllamaClient(
+        generation_model="mistral:latest",
+        embedding_model="nomic-embed-text:latest"
+    )
 
     # Test getting available models
     print("Getting available models...")
     models = client.get_available_models()
     print(f"Available models: {models}")
+
+    # Print which models are being used
+    print(f"Using generation model: {client.generation_model}")
+    print(f"Using embedding model: {client.embedding_model}")
 
     # Test generating text
     print("\nGenerating text...")
@@ -84,8 +91,14 @@ def test_rag_system():
     else:
         db_client = seo_db
 
-    # Initialize Ollama client
-    ollama_client = OllamaClient(model="qwen3:8b")
+    # Initialize Ollama client with separate models for generation and embeddings
+    ollama_client = OllamaClient(
+        generation_model="mistral:latest",
+        embedding_model="nomic-embed-text:latest"
+    )
+
+    print(f"Using generation model: {ollama_client.generation_model}")
+    print(f"Using embedding model: {ollama_client.embedding_model}")
 
     # Initialize RAG system
     rag = RAGSystem(db_client, ollama_client)
@@ -130,8 +143,14 @@ def test_ai_seo_optimizer():
 
     print("\nTesting AI SEO Optimizer...")
 
-    # Initialize optimizer
-    optimizer = AISEOOptimizer(ollama_model="qwen3:8b")
+    # Initialize optimizer with new models
+    optimizer = AISEOOptimizer(
+        generation_model="mistral:latest",
+        embedding_model="nomic-embed-text:latest"
+    )
+
+    print(f"Using generation model: {optimizer.ollama.generation_model}")
+    print(f"Using embedding model: {optimizer.ollama.embedding_model}")
 
     # Create a sample listing
     sample_listing = {

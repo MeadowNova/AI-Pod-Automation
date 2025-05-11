@@ -1,13 +1,21 @@
+#!/usr/bin/env python3
 """
-Test script to verify Ollama is properly configured and working.
+Simple test script for dual-model Ollama configuration.
 
-This script performs basic tests to ensure Ollama is running and can generate responses.
+This script tests the dual-model approach with separate models for text generation and embeddings.
 """
 
+import os
 import sys
-import requests
-import json
 import time
+import json
+import logging
+import requests
+from datetime import datetime
+
+# Set up logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 def check_ollama_server():
     """Check if Ollama server is running."""
@@ -52,7 +60,7 @@ def list_available_models():
         print(f"Error listing models: {str(e)}")
         return []
 
-def test_generation(model_name="llama3"):
+def test_generation(model_name="mistral:latest"):
     """Test text generation with a specific model."""
     print(f"\nTesting text generation with model '{model_name}'...")
 
@@ -89,10 +97,7 @@ def test_generation(model_name="llama3"):
         return False
 
 def test_embedding(model_name="nomic-embed-text"):
-    """Test embedding generation with a specific model.
-
-    Defaults to nomic-embed-text which is optimized for embeddings.
-    """
+    """Test embedding generation with a specific model."""
     print(f"\nTesting embedding generation with model '{model_name}'...")
 
     try:
@@ -127,7 +132,7 @@ def test_embedding(model_name="nomic-embed-text"):
 def main():
     """Main entry point."""
     print("=" * 50)
-    print("OLLAMA CONFIGURATION TEST")
+    print("DUAL-MODEL OLLAMA TEST")
     print("=" * 50)
 
     # Check if Ollama server is running
@@ -141,7 +146,9 @@ def main():
     models = list_available_models()
 
     if not models:
-        print("\n❌ No models available. Please pull a model with 'ollama pull mistral:latest'")
+        print("\n❌ No models available. Please pull models with:")
+        print("  ollama pull mistral:latest")
+        print("  ollama pull nomic-embed-text")
         sys.exit(1)
 
     # Select models to test
@@ -160,7 +167,7 @@ def main():
 
     # For embeddings, prefer nomic-embed-text, then all-minilm:l6-v2, then e5-small-v2
     embedding_model = None
-    embedding_preferences = ["nomic-embed-text", "all-minilm:l6-v2", "e5-small-v2"]
+    embedding_preferences = ["nomic-embed-text:latest", "nomic-embed-text", "all-minilm:l6-v2", "e5-small-v2"]
     for model in embedding_preferences:
         if model in available_model_names:
             embedding_model = model
@@ -204,9 +211,9 @@ def main():
             print(f"  ollama pull {model}")
 
     if server_running and models and generation_success and embedding_success:
-        print("\n✅ All tests passed! Ollama is properly configured and working.")
+        print("\n✅ All tests passed! Dual-model approach is working correctly.")
     else:
-        print("\n❌ Some tests failed. Please check the issues above.")
+        print("\n❌ Some tests failed. Please check the logs for details.")
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()

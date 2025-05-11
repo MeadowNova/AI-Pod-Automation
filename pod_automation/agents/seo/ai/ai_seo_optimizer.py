@@ -16,6 +16,7 @@ from pod_automation.agents.seo.seo_optimizer import SEOOptimizer
 from pod_automation.agents.seo.db import seo_db
 from pod_automation.agents.seo.ai.ollama_client import OllamaClient
 from pod_automation.agents.seo.ai.rag_system import RAGSystem
+from pod_automation.agents.seo.ai.batch_processor import BatchProcessor
 from pod_automation.utils.gpu_utils import get_device, gpu_memory_stats, clear_gpu_memory, optimize_for_inference
 
 logger = logging.getLogger(__name__)
@@ -23,12 +24,13 @@ logger = logging.getLogger(__name__)
 class AISEOOptimizer(SEOOptimizer):
     """AI-enhanced SEO optimizer for Etsy listings."""
 
-    def __init__(self, config=None, ollama_model="qwen3:8b", device_id=None, use_gpu=True):
+    def __init__(self, config=None, generation_model="mistral:latest", embedding_model="nomic-embed-text", device_id=None, use_gpu=True):
         """Initialize AI SEO optimizer.
 
         Args:
             config (dict, optional): Configuration dictionary
-            ollama_model (str): Ollama model to use
+            generation_model (str): Ollama model to use for text generation
+            embedding_model (str): Ollama model to use for embeddings
             device_id (int, optional): Specific GPU device ID to use
             use_gpu (bool): Whether to use GPU acceleration if available
         """
@@ -55,11 +57,20 @@ class AISEOOptimizer(SEOOptimizer):
             logger.info("GPU usage disabled, using CPU for AI SEO optimization")
             self.device = torch.device("cpu")
 
-        # Initialize Ollama client
-        self.ollama = OllamaClient(model=ollama_model)
+        # Initialize Ollama client with separate models for generation and embeddings
+        self.ollama = OllamaClient(
+            generation_model=generation_model,
+            embedding_model=embedding_model
+        )
+
+        logger.info(f"Using generation model: {self.ollama.generation_model}")
+        logger.info(f"Using embedding model: {self.ollama.embedding_model}")
 
         # Initialize RAG system with the selected device
         self.rag = RAGSystem(seo_db, self.ollama, device=self.device)
+
+        # Initialize batch processor
+        self.batch_processor = BatchProcessor(self.ollama, seo_db, max_workers=4)
 
         # Index data
         try:
@@ -544,6 +555,32 @@ JSON:"""
                 },
                 "recommendations": ["Error generating recommendations"]
             }
+
+    def optimize_listings_batch(self, listings, max_listings=None):
+        """Optimize multiple listings in a batch.
+
+        Args:
+            listings (list): List of listings to optimize
+            max_listings (int, optional): Maximum number of listings to process
+
+        Returns:
+            list: Optimized listings
+        """
+        logger.info(f"Optimizing {len(listings)} listings in batch")
+
+        # Limit the number of listings if specified
+        if max_listings and len(listings) > max_listings:
+            listings = listings[:max_listings]
+            logger.info(f"Limited batch to {max_listings} listings")
+
+        # Use the batch processor to optimize listings
+        optimized_listings = self.batch_processor.optimize_listings(listings, self)
+
+        # Log cache statistics
+        cache_stats = self.ollama.get_cache_stats()
+        logger.info(f"Embedding cache stats: {cache_stats}")
+
+        return optimized_listings
 
     def explain_optimization(self, original, optimized):
         """Explain optimization changes.

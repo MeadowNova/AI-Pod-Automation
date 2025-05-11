@@ -25,27 +25,41 @@ class SEOServiceAdapter:
             from pod_automation.agents.seo.ai.ollama_client import OllamaClient
 
             # First check if Ollama is accessible
-            ollama_client = OllamaClient(
-                base_url=settings.AI_MODEL_HOST,
-                model=settings.AI_MODEL_NAME
+            # Use a hardcoded URL to avoid any formatting issues
+            base_url = "http://localhost:11434"
+            logger.info(f"Using Ollama URL: {base_url}")
+
+            # Define preferred models
+            generation_model = "mistral:latest"
+            embedding_model = "nomic-embed-text:latest"
+
+            # Create a temporary client to check available models
+            temp_client = OllamaClient(
+                base_url=base_url,
+                generation_model=generation_model,
+                embedding_model=embedding_model
             )
 
             # Test connection by getting available models
-            available_models = ollama_client.get_available_models()
+            available_models = temp_client.get_available_models()
             if not available_models:
-                logger.warning(f"No models available from Ollama at {settings.AI_MODEL_HOST}")
+                logger.warning(f"No models available from Ollama at {base_url}")
                 raise RuntimeError(f"Ollama service not available or no models found")
 
-            if settings.AI_MODEL_NAME not in [model.split(':')[0] for model in available_models]:
-                logger.warning(f"Model {settings.AI_MODEL_NAME} not found in available models: {available_models}")
-                # Try to use an available model instead
-                fallback_model = available_models[0] if available_models else settings.AI_MODEL_NAME
-                logger.info(f"Falling back to available model: {fallback_model}")
-                settings.AI_MODEL_NAME = fallback_model
+            # Check if our preferred models are available
+            logger.info(f"Available models: {available_models}")
 
-            # Initialize the optimizer with the configured model
+            # Use the models that were selected by the client's auto-fallback mechanism
+            generation_model = temp_client.generation_model
+            embedding_model = temp_client.embedding_model
+
+            logger.info(f"Using generation model: {generation_model}")
+            logger.info(f"Using embedding model: {embedding_model}")
+
+            # Initialize the optimizer with the configured models
             self.optimizer = AISEOOptimizer(
-                ollama_model=settings.AI_MODEL_NAME,
+                generation_model=generation_model,
+                embedding_model=embedding_model,
                 use_gpu=True  # Enable GPU acceleration if available
             )
             self.db = seo_db
@@ -226,6 +240,85 @@ class SEOServiceAdapter:
 
         except Exception as e:
             logger.error(f"Error optimizing listing: {str(e)}")
+            raise
+
+    async def optimize_listings_batch(
+        self,
+        user_id: str,
+        listings: List[Dict[str, Any]],
+        max_listings: Optional[int] = None
+    ) -> List[ListingOptimizationResponse]:
+        """
+        Optimize multiple Etsy listings in a batch.
+
+        Args:
+            user_id: User ID
+            listings: List of listings to optimize
+            max_listings: Maximum number of listings to process
+
+        Returns:
+            List[ListingOptimizationResponse]: List of optimized listings
+        """
+        if not self.initialized:
+            logger.error("SEO service adapter not initialized")
+            raise RuntimeError("SEO service not available")
+
+        try:
+            # Prepare listings for optimization
+            prepared_listings = []
+            for listing in listings:
+                listing_id = listing.get("etsy_listing_id") or listing.get("id")
+                title = listing.get("title") or listing.get("title_original")
+                tags = listing.get("tags") or listing.get("tags_original", [])
+                description = listing.get("description") or listing.get("description_original")
+
+                if not all([listing_id, title]):
+                    logger.warning(f"Skipping listing with missing data: {listing}")
+                    continue
+
+                prepared_listing = {
+                    "etsy_listing_id": listing_id,
+                    "title_original": title,
+                    "tags_original": tags,
+                    "description_original": description
+                }
+                prepared_listings.append(prepared_listing)
+
+            if not prepared_listings:
+                logger.warning("No valid listings to optimize")
+                return []
+
+            # Log the batch size
+            logger.info(f"Optimizing batch of {len(prepared_listings)} listings")
+
+            # Optimize listings in batch
+            optimized_listings = self.optimizer.optimize_listings_batch(prepared_listings, max_listings)
+
+            # Convert to response format
+            responses = []
+            for optimized in optimized_listings:
+                # Calculate SEO score
+                seo_score = optimized.get("optimization_score", 0)
+
+                # Create response
+                response = ListingOptimizationResponse(
+                    listing_id=optimized.get("etsy_listing_id"),
+                    optimized_title=optimized.get("title_optimized"),
+                    optimized_tags=optimized.get("tags_optimized"),
+                    optimized_description=optimized.get("description_optimized"),
+                    seo_score=seo_score,
+                    recommendations=[]  # We could add recommendations here if needed
+                )
+                responses.append(response)
+
+            # Log cache statistics
+            cache_stats = self.optimizer.ollama.get_cache_stats()
+            logger.info(f"Embedding cache stats after batch: {cache_stats}")
+
+            return responses
+
+        except Exception as e:
+            logger.error(f"Error optimizing listings batch: {str(e)}")
             raise
 
 

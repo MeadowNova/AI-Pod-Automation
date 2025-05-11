@@ -1,9 +1,14 @@
-from typing import Any
+from typing import Any, List
 
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from app.core.security import get_current_user
-from app.schemas.seo import ListingOptimizationRequest, ListingOptimizationResponse
+from app.schemas.seo import (
+    ListingOptimizationRequest,
+    ListingOptimizationResponse,
+    BatchListingOptimizationRequest,
+    BatchListingOptimizationResponse
+)
 from app.adapters.seo_adapter import seo_service
 from app.adapters.etsy_adapter import etsy_service
 
@@ -46,6 +51,62 @@ async def optimize_etsy_listing(
     except ValueError as e:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(e)
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e)
+        )
+
+
+@router.post("/optimize-listings-batch", response_model=BatchListingOptimizationResponse)
+async def optimize_etsy_listings_batch(
+    request: BatchListingOptimizationRequest,
+    current_user: str = Depends(get_current_user)
+) -> Any:
+    """
+    Optimize multiple Etsy listings in a batch using AI.
+
+    This endpoint processes multiple listings at once, which is more efficient
+    than optimizing them one by one. It uses clustering to group similar listings
+    and processes them in parallel.
+    """
+    try:
+        # Validate the request
+        if not request.listings:
+            raise ValueError("No listings provided for optimization")
+
+        # Get the maximum number of listings to process
+        max_listings = request.max_listings
+
+        # Optimize listings in batch
+        optimized_listings = await seo_service.optimize_listings_batch(
+            user_id=current_user,
+            listings=request.listings,
+            max_listings=max_listings
+        )
+
+        # Get cache statistics
+        cache_stats = seo_service.optimizer.ollama.get_cache_stats() if hasattr(seo_service, 'optimizer') else None
+
+        # Create response
+        response = BatchListingOptimizationResponse(
+            results=optimized_listings,
+            processed_count=len(optimized_listings),
+            total_count=len(request.listings),
+            cache_stats=cache_stats
+        )
+
+        return response
+    except RuntimeError as e:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=str(e)
+        )
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
             detail=str(e)
         )
     except Exception as e:
