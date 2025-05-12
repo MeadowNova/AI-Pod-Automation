@@ -20,6 +20,14 @@ from pod_automation.utils.logging_config import setup_logging
 setup_logging()
 logger = logging.getLogger(__name__)
 
+# Import template manager
+try:
+    from .templates.template_manager import TemplateManager
+except ImportError:
+    # Handle the case where the template manager is not yet available
+    TemplateManager = None
+    logger.warning("TemplateManager not found. Description templates will not be used.")
+
 class SEOOptimizer:
     """Optimizer for enhancing Etsy listings with SEO."""
 
@@ -42,6 +50,18 @@ class SEOOptimizer:
         # Load templates
         self.title_templates = self._load_templates('title_templates')
         self.description_templates = self._load_templates('description_templates')
+
+        # Initialize template manager if available
+        if TemplateManager is not None:
+            try:
+                templates_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'templates')
+                self.template_manager = TemplateManager(templates_dir)
+                logger.info("Template manager initialized successfully")
+            except Exception as e:
+                logger.error(f"Error initializing template manager: {e}")
+                self.template_manager = None
+        else:
+            self.template_manager = None
 
     def _load_keywords(self):
         """Load keyword data from file or use default.
@@ -405,44 +425,697 @@ class SEOOptimizer:
 
         return selected_keywords
 
-    def optimize_title(self, base_keyword, product_type, tags=None):
-        """Optimize title for an Etsy listing."""
+    def optimize_title(self, base_keyword, product_type, tags=None, important_elements=None, original_title=None):
+        """
+        Optimize title for an Etsy listing while preserving important elements.
+
+        Args:
+            base_keyword (str): The base keyword for optimization
+            product_type (str): The product type
+            tags (list, optional): List of optimized tags
+            important_elements (dict, optional): Dictionary of important elements to preserve
+            original_title (str, optional): The original listing title
+
+        Returns:
+            str: Optimized title
+        """
         logger.info(f"Optimizing title for {base_keyword} {product_type}")
 
-        # Select a random title template
-        template = random.choice(self.title_templates)
+        # Initialize important elements if not provided
+        if important_elements is None:
+            important_elements = {}
 
-        # Replace placeholders
-        title = template.replace('{keyword}', base_keyword).replace('{product_type}', product_type)
+        # Determine the animal type from the base keyword and title
+        animal_type = "cat"  # Default animal
+        if original_title is None:
+            original_title = ""
+
+        # Check for different animals in the base keyword or original title
+        if "dog" in base_keyword.lower() or "dog" in original_title.lower():
+            animal_type = "dog"
+        elif "bird" in base_keyword.lower() or "bird" in original_title.lower():
+            animal_type = "bird"
+        elif "rabbit" in base_keyword.lower() or "bunny" in original_title.lower():
+            animal_type = "rabbit"
+        elif "fox" in base_keyword.lower() or "fox" in original_title.lower():
+            animal_type = "fox"
+        elif "wolf" in base_keyword.lower() or "wolf" in original_title.lower():
+            animal_type = "wolf"
+
+        # Get product-specific templates if available
+        product_specific_templates = self._get_product_specific_templates(product_type)
+
+        # If we have product-specific templates, use those, otherwise use general templates
+        templates_to_use = product_specific_templates if product_specific_templates else self.title_templates
+
+        # Select a random title template
+        template = random.choice(templates_to_use)
+
+        # Replace "Cat" with the appropriate animal in the template
+        if animal_type != "cat":
+            template = template.replace("Cat ", f"{animal_type.title()} ")
+            template = template.replace("cat ", f"{animal_type} ")
+
+        # Format product_type to be properly capitalized
+        formatted_product_type = product_type.replace('_', ' ').title()
+
+        # Create a dictionary of placeholder values
+        placeholder_values = {
+            'keyword': base_keyword,
+            'product_type': formatted_product_type,
+
+            # Artist-related placeholders
+            'artist': important_elements.get('artist_name', 'Art'),
+
+            # Style-related placeholders
+            'style': important_elements.get('art_style', self._get_appropriate_style(product_type)),
+            'art_style': important_elements.get('art_style', self._get_appropriate_style(product_type)),
+            'art_type': self._get_art_type(product_type),
+
+            # Product-specific placeholders
+            'design_feature': self._get_design_feature(base_keyword, product_type),
+            'size': self._get_size(product_type),
+            'room': self._get_room(product_type),
+            'season': self._get_season(),
+
+            # Gift-related placeholders
+            'occasion': self._get_occasion(),
+            'recipient': self._get_recipient(base_keyword),
+        }
+
+        # Replace all placeholders in the template
+        title = template
+        for placeholder, value in placeholder_values.items():
+            placeholder_pattern = '{' + placeholder + '}'
+            if placeholder_pattern in title:
+                # Ensure value is a string
+                if value is None:
+                    value = placeholder.title()  # Use capitalized placeholder name as fallback
+                title = title.replace(placeholder_pattern, str(value))
+
+        # Add unique elements if available
+        unique_elements = important_elements.get('unique_elements', [])
+        for element in unique_elements:
+            if element and element.lower() not in title.lower():
+                if len(title) + len(f" | {element}") <= 135:
+                    title += f" | {element}"
+
+        # Remove redundant artist mentions (e.g., "Van Gogh inspired... with Van Gogh Inspired Design")
+        artist_name = important_elements.get('artist_name')
+        if artist_name:
+            # Check for redundant mentions
+            artist_pattern = re.compile(f"{re.escape(artist_name)}.*?{re.escape(artist_name)}", re.IGNORECASE)
+            if artist_pattern.search(title):
+                # Replace the second mention with a generic term
+                title = re.sub(f"({re.escape(artist_name)})(.*)({re.escape(artist_name)})",
+                              r"\1\2Artistic", title, flags=re.IGNORECASE)
+
+        # Remove redundant product type mentions (e.g., "Halloween cat lover Halloween Decoration")
+        product_words = product_type.lower().split('_')
+        for word in product_words:
+            if len(word) > 3:  # Only check for substantial words
+                word_pattern = re.compile(f"\\b{re.escape(word)}\\b.*?\\b{re.escape(word)}\\b", re.IGNORECASE)
+                if word_pattern.search(title):
+                    # Replace the second mention with a generic term
+                    title = re.sub(f"(\\b{re.escape(word)}\\b)(.*?)(\\b{re.escape(word)}\\b)",
+                                  r"\1\2", title, flags=re.IGNORECASE, count=1)
+
+        # Fix redundant terms
+        title = re.sub(r"(Artistic)\s+(Artistic)", r"\1", title, flags=re.IGNORECASE)
+        title = re.sub(r"(Stylish)\s+(Stylish)", r"\1", title, flags=re.IGNORECASE)
+        title = re.sub(r"(Unique)\s+(Unique)", r"\1", title, flags=re.IGNORECASE)
+        title = re.sub(r"(Decorative)\s+(Decorative)", r"\1", title, flags=re.IGNORECASE)
+
+        # Ensure the title follows the format with pipe separators
+        # First, convert any existing commas to pipes if there aren't already pipes
+        if '|' not in title:
+            title = title.replace(', ', ' | ')
+            title = title.replace(' - ', ' | ')
+
+        # Add unique elements if available
+        unique_elements = important_elements.get('unique_elements', [])
+        for element in unique_elements:
+            if element and element.lower() not in title.lower():
+                if len(title) + len(f" | {element}") <= 135:
+                    title += f" | {element}"
+
+        # Fix any empty pipe segments (||)
+        title = re.sub(r'\|\s*\|', '|', title)
+        title = re.sub(r'\s*\|\s*$', '', title)  # Remove trailing pipe
+        title = re.sub(r'^\s*\|\s*', '', title)  # Remove leading pipe
+
+        # Ensure title is at least 120 characters for better SEO (if we have enough content)
+        if len(title) < 120 and tags:
+            # Add some top tags to extend the title
+            for tag in tags:
+                formatted_tag = tag.replace('_', ' ').title()
+                if formatted_tag.lower() not in title.lower() and len(title) + len(f" | {formatted_tag}") <= 135:
+                    title += f" | {formatted_tag}"
+                    # Check if we've reached the minimum length
+                    if len(title) >= 120:
+                        break
+
+        # If still under 120 characters, add some high-value descriptive phrases
+        if len(title) < 120:
+            # Product-specific high-value phrases
+            product_specific_phrases = {
+                "tshirt": [
+                    "Soft Cotton Tee",
+                    "Unisex Fit",
+                    "Graphic Tshirt",
+                    "Printed in USA",
+                    "Comfortable Fit",
+                    "Durable Print",
+                    "Machine Washable",
+                    "Eco-Friendly Ink"
+                ],
+                "art_print": [
+                    "Gallery Quality",
+                    "Archival Paper",
+                    "Vibrant Colors",
+                    "Museum Quality",
+                    "Fine Art Print",
+                    "Acid-Free Paper",
+                    "Giclee Print",
+                    "Ready to Frame"
+                ],
+                "sweatshirt": [
+                    "Cozy Fleece",
+                    "Warm Hoodie",
+                    "Soft Interior",
+                    "Durable Stitching",
+                    "Kangaroo Pocket",
+                    "Ribbed Cuffs",
+                    "Preshrunk Fabric",
+                    "Pill-Resistant"
+                ],
+                "mug": [
+                    "Dishwasher Safe",
+                    "Microwave Safe",
+                    "11oz Ceramic",
+                    "Durable Print",
+                    "Lead-Free",
+                    "Chip-Resistant",
+                    "Double-Sided Print",
+                    "Glossy Finish"
+                ],
+                "pillow": [
+                    "Hidden Zipper",
+                    "Machine Washable",
+                    "Soft Polyester",
+                    "Vibrant Print",
+                    "Durable Cover",
+                    "Hypoallergenic",
+                    "Removable Insert",
+                    "Double-Sided Print"
+                ]
+            }
+
+            # General high-value phrases for any product
+            general_phrases = [
+                "Handmade in USA",
+                "Small Business",
+                "Fast Shipping",
+                "Eco-Friendly",
+                "Limited Edition",
+                "Exclusive Design",
+                "Custom Made",
+                "Satisfaction Guaranteed"
+            ]
+
+            # Determine product category
+            product_category = "general"
+            for category in product_specific_phrases.keys():
+                if category in product_type.lower():
+                    product_category = category
+                    break
+
+            # Use product-specific phrases if available, otherwise use general phrases
+            filler_phrases = product_specific_phrases.get(product_category, general_phrases)
+
+            # Add phrases until we reach the minimum length
+            for phrase in filler_phrases:
+                if phrase.lower() not in title.lower() and len(title) + len(f" | {phrase}") <= 135:
+                    title += f" | {phrase}"
+                    # Check if we've reached the minimum length
+                    if len(title) >= 120:
+                        break
 
         # Ensure title is not too long (Etsy limit is 140 characters)
         if len(title) > 140:
-            title = title[:137] + '...'
+            # Find the last complete segment before the 137 character limit
+            last_pipe = title[:137].rfind(' | ')
+            if last_pipe > 0:
+                title = title[:last_pipe]
+            else:
+                title = title[:137]
+
+        # Final check - if still under 120, add more descriptive text with pipes
+        if len(title) < 120:
+            remaining_length = 140 - len(title)
+
+            # Product-specific fillers
+            product_fillers = {
+                "tshirt": " | Soft Cotton | Unisex Fit | Graphic Tee | Durable Print | Made in USA",
+                "art_print": " | Gallery Quality | Fine Art | Vibrant Colors | Archival Paper | Ready to Frame",
+                "sweatshirt": " | Cozy Fleece | Warm Hoodie | Soft Interior | Durable | Preshrunk",
+                "mug": " | Ceramic | Dishwasher Safe | Microwave Safe | Durable Print | Lead-Free",
+                "pillow": " | Soft Cover | Machine Washable | Vibrant Print | Hidden Zipper | Removable Insert"
+            }
+
+            # Determine product category
+            product_category = "general"
+            for category in product_fillers.keys():
+                if category in product_type.lower():
+                    product_category = category
+                    break
+
+            # Use product-specific filler if available, otherwise use general filler
+            if product_category in product_fillers:
+                filler = product_fillers[product_category]
+            else:
+                filler = " | Handmade | Limited Edition | Fast Shipping | Exclusive Design | Small Business"
+
+            # Add filler up to the remaining length
+            title += filler[:remaining_length]
 
         logger.info(f"Generated optimized title: {title}")
 
         return title
 
-    def optimize_description(self, base_keyword, product_type, tags=None):
-        """Optimize description for an Etsy listing."""
+    def _get_product_specific_templates(self, product_type):
+        """Get product-specific title templates.
+
+        Args:
+            product_type (str): The product type
+
+        Returns:
+            list: List of product-specific templates
+        """
+        # Define templates for specific product types following the exact format requested
+        product_templates = {
+            # T-Shirt templates
+            'tshirt': [
+                # Format: [High Value Keyword] | [Design Theme] T-Shirt | [Style/Mood] [Product Type] | [Occasion] Gift | [Recipient] Present | [Design Feature]
+                "Cat Lover T-Shirt | {keyword} Tee | {style} {product_type} | {occasion} Gift | {recipient} Present | {design_feature}",
+                "Cat Mom Shirt | {artist} Inspired Tee | {style} {product_type} | {occasion} Gift | {recipient} Present | {design_feature}",
+                "Funny Cat T-Shirt | {keyword} Tee | Humorous {product_type} | Coworker Gift | {recipient} Present | {design_feature}",
+                "Cat Dad Gift | Cute {keyword} Tee | Adorable {product_type} | Birthday Present | {recipient} Gift | {design_feature}",
+                "Vintage Cat Shirt | {keyword} Tee | Retro Style {product_type} | Holiday Gift | {recipient} Present | {design_feature}"
+            ],
+            't-shirt': [
+                # Format: [High Value Keyword] | [Design Theme] T-Shirt | [Style/Mood] [Product Type] | [Occasion] Gift | [Recipient] Present | [Design Feature]
+                "Cat Lover T-Shirt | {keyword} Tee | {style} {product_type} | {occasion} Gift | {recipient} Present | {design_feature}",
+                "Cat Mom Shirt | {artist} Inspired Tee | {style} {product_type} | {occasion} Gift | {recipient} Present | {design_feature}",
+                "Funny Cat T-Shirt | {keyword} Tee | Humorous {product_type} | Coworker Gift | {recipient} Present | {design_feature}",
+                "Cat Dad Gift | Cute {keyword} Tee | Adorable {product_type} | Birthday Present | {recipient} Gift | {design_feature}",
+                "Vintage Cat Shirt | {keyword} Tee | Retro Style {product_type} | Holiday Gift | {recipient} Present | {design_feature}"
+            ],
+            't_shirt': [
+                # Format: [High Value Keyword] | [Design Theme] T-Shirt | [Style/Mood] [Product Type] | [Occasion] Gift | [Recipient] Present | [Design Feature]
+                "Cat Lover T-Shirt | {keyword} Tee | {style} {product_type} | {occasion} Gift | {recipient} Present | {design_feature}",
+                "Cat Mom Shirt | {artist} Inspired Tee | {style} {product_type} | {occasion} Gift | {recipient} Present | {design_feature}",
+                "Funny Cat T-Shirt | {keyword} Tee | Humorous {product_type} | Coworker Gift | {recipient} Present | {design_feature}",
+                "Cat Dad Gift | Cute {keyword} Tee | Adorable {product_type} | Birthday Present | {recipient} Gift | {design_feature}",
+                "Vintage Cat Shirt | {keyword} Tee | Retro Style {product_type} | Holiday Gift | {recipient} Present | {design_feature}"
+            ],
+
+            # Art Print templates
+            'art_print': [
+                # Format: [High Value Keyword] | [Design Theme] Wall Art | [Style] [Art Type] | [Room] Decor | [Occasion] Gift | [Art Style] Print
+                "Cat Wall Art | {keyword} Print | {style} {art_type} | {room} Decor | {occasion} Gift | {art_style} Print",
+                "Cat Home Decor | {artist} Inspired Art | {style} {art_type} | {room} Decor | {occasion} Gift | {art_style} Print",
+                "Funny Cat Wall Art | {keyword} Print | Humorous Art | Living Room Decor | {recipient} Gift | {art_style} Print",
+                "Cat Mom Gift | {keyword} Wall Art | Minimalist {art_type} | Home Office Decor | Birthday Gift | {art_style} Print",
+                "Cat Dad Present | {artist} Style Art | {style} {art_type} | Bedroom Decor | Holiday Gift | Fine Art Print"
+            ],
+            'poster': [
+                # Format: [High Value Keyword] | [Design Theme] Wall Art | [Style] [Art Type] | [Room] Decor | [Occasion] Gift | [Art Style] Print
+                "Cat Wall Art | {keyword} Poster | {style} {art_type} | {room} Decor | {occasion} Gift | {art_style} Print",
+                "Cat Home Decor | {artist} Inspired Art | {style} {art_type} | {room} Decor | {occasion} Gift | {art_style} Print",
+                "Funny Cat Wall Art | {keyword} Poster | Humorous Art | Living Room Decor | {recipient} Gift | {art_style} Print",
+                "Cat Mom Gift | {keyword} Wall Art | Minimalist {art_type} | Home Office Decor | Birthday Gift | {art_style} Print",
+                "Cat Dad Present | {artist} Style Art | {style} {art_type} | Bedroom Decor | Holiday Gift | Fine Art Print"
+            ],
+            'wall_art': [
+                # Format: [High Value Keyword] | [Design Theme] Wall Art | [Style] [Art Type] | [Room] Decor | [Occasion] Gift | [Art Style] Print
+                "Cat Wall Art | {keyword} Print | {style} {art_type} | {room} Decor | {occasion} Gift | {art_style} Print",
+                "Cat Home Decor | {artist} Inspired Art | {style} {art_type} | {room} Decor | {occasion} Gift | {art_style} Print",
+                "Funny Cat Wall Art | {keyword} Print | Humorous Art | Living Room Decor | {recipient} Gift | {art_style} Print",
+                "Cat Mom Gift | {keyword} Wall Art | Minimalist {art_type} | Home Office Decor | Birthday Gift | {art_style} Print",
+                "Cat Dad Present | {artist} Style Art | {style} {art_type} | Bedroom Decor | Holiday Gift | Fine Art Print"
+            ],
+
+            # Sweatshirt/Hoodie templates
+            'sweatshirt': [
+                # Format: [High Value Keyword] | [Design Theme] Sweatshirt | [Style/Mood] [Product Type] | [Season] Clothing | [Occasion] Gift | [Recipient] Present
+                "Cat Lover Sweatshirt | {keyword} Hoodie | {style} {product_type} | {season} Clothing | {occasion} Gift | {recipient} Present",
+                "Cat Mom Hoodie | {artist} Inspired Sweatshirt | {style} {product_type} | {season} Clothing | {occasion} Gift | {recipient} Present",
+                "Funny Cat Sweatshirt | {keyword} Hoodie | Humorous {product_type} | Winter Clothing | Birthday Gift | {recipient} Present",
+                "Cat Dad Gift | Cute {keyword} Sweatshirt | Adorable {product_type} | Fall Clothing | Holiday Gift | {recipient} Present",
+                "Vintage Cat Hoodie | {keyword} Sweatshirt | Retro Style {product_type} | Spring Clothing | Christmas Gift | {recipient} Present"
+            ],
+            'hoodie': [
+                # Format: [High Value Keyword] | [Design Theme] Sweatshirt | [Style/Mood] [Product Type] | [Season] Clothing | [Occasion] Gift | [Recipient] Present
+                "Cat Lover Hoodie | {keyword} Sweatshirt | {style} {product_type} | {season} Clothing | {occasion} Gift | {recipient} Present",
+                "Cat Mom Sweatshirt | {artist} Inspired Hoodie | {style} {product_type} | {season} Clothing | {occasion} Gift | {recipient} Present",
+                "Funny Cat Hoodie | {keyword} Sweatshirt | Humorous {product_type} | Winter Clothing | Birthday Gift | {recipient} Present",
+                "Cat Dad Gift | Cute {keyword} Hoodie | Adorable {product_type} | Fall Clothing | Holiday Gift | {recipient} Present",
+                "Vintage Cat Sweatshirt | {keyword} Hoodie | Retro Style {product_type} | Spring Clothing | Christmas Gift | {recipient} Present"
+            ],
+            'pullover': [
+                # Format: [High Value Keyword] | [Design Theme] Sweatshirt | [Style/Mood] [Product Type] | [Season] Clothing | [Occasion] Gift | [Recipient] Present
+                "Cat Lover Pullover | {keyword} Sweatshirt | {style} {product_type} | {season} Clothing | {occasion} Gift | {recipient} Present",
+                "Cat Mom Sweatshirt | {artist} Inspired Pullover | {style} {product_type} | {season} Clothing | {occasion} Gift | {recipient} Present",
+                "Funny Cat Pullover | {keyword} Sweatshirt | Humorous {product_type} | Winter Clothing | Birthday Gift | {recipient} Present",
+                "Cat Dad Gift | Cute {keyword} Pullover | Adorable {product_type} | Fall Clothing | Holiday Gift | {recipient} Present",
+                "Vintage Cat Sweatshirt | {keyword} Pullover | Retro Style {product_type} | Spring Clothing | Christmas Gift | {recipient} Present"
+            ],
+
+            # Other product types with adapted templates
+            'mug': [
+                "Cat Lover Mug | {keyword} Coffee Cup | {style} Ceramic | Kitchen Accessory | {occasion} Gift | {recipient} Present",
+                "Cat Mom Gift | Funny {keyword} Mug | Humorous Ceramic Cup | Office Accessory | Coworker Gift | {recipient} Present",
+                "Cat Dad Present | Cute {keyword} Mug | Adorable Coffee Cup | Home Accessory | Birthday Gift | {recipient} Present"
+            ],
+            'pillow': [
+                "Cat Throw Pillow | {keyword} Cushion | {style} Home Decor | Living Room Accessory | {occasion} Gift | {recipient} Present",
+                "Cat Home Decor | Decorative {keyword} Pillow | {style} Cushion | Bedroom Accessory | Housewarming Gift | {recipient} Present",
+                "Cat Lover Gift | Cute {keyword} Pillow | Adorable Home Decor | Sofa Accessory | Birthday Gift | {recipient} Present"
+            ],
+            'tote': [
+                "Cat Tote Bag | {keyword} Shopping Bag | {style} Canvas | Eco-Friendly Accessory | {occasion} Gift | {recipient} Present",
+                "Cat Mom Gift | Funny {keyword} Tote | Humorous Shopping Bag | Reusable Accessory | Birthday Gift | {recipient} Present",
+                "Cat Lover Present | Cute {keyword} Bag | Adorable Tote | Everyday Accessory | Holiday Gift | {recipient} Present"
+            ],
+
+            # Generic template for other product types
+            'generic': [
+                "Cat Lover Gift | {keyword} {product_type} | {style} Design | Premium Quality | {occasion} Gift | {recipient} Present",
+                "Cat Mom Present | Funny {keyword} {product_type} | Humorous Design | High Quality | Birthday Gift | {recipient} Present",
+                "Cat Dad Gift | Cute {keyword} {product_type} | Adorable Design | Premium Quality | Holiday Gift | {recipient} Present"
+            ]
+        }
+
+        # Normalize product type for matching
+        normalized_type = product_type.lower().replace(' ', '_')
+
+        # Check for direct match
+        if normalized_type in product_templates:
+            return product_templates[normalized_type]
+
+        # Check for partial matches
+        for key in product_templates:
+            if key != 'generic' and (key in normalized_type or normalized_type in key):
+                return product_templates[key]
+
+        # No specific match found, return generic templates
+        return product_templates['generic']
+
+    def _get_appropriate_style(self, product_type):
+        """Get an appropriate style term based on product type."""
+        if 'art' in product_type.lower() or 'print' in product_type.lower() or 'poster' in product_type.lower():
+            return random.choice(['Minimalist', 'Abstract', 'Impressionist', 'Pop Art', 'Modern Art', 'Contemporary', 'Watercolor', 'Digital Art'])
+        elif 'shirt' in product_type.lower() or 'tee' in product_type.lower():
+            return random.choice(['Vintage', 'Retro', 'Graphic', 'Funny', 'Cute', 'Aesthetic', 'Minimalist', 'Artistic'])
+        elif 'hoodie' in product_type.lower() or 'sweatshirt' in product_type.lower():
+            return random.choice(['Oversized', 'Vintage', 'Graphic', 'Aesthetic', 'Streetwear', 'Unisex', 'Retro', 'Minimalist'])
+        elif 'pillow' in product_type.lower() or 'decor' in product_type.lower():
+            return random.choice(['Boho', 'Farmhouse', 'Modern', 'Minimalist', 'Scandinavian', 'Rustic', 'Coastal', 'Industrial'])
+        elif 'mug' in product_type.lower() or 'cup' in product_type.lower():
+            return random.choice(['Ceramic', 'Funny', 'Novelty', 'Personalized', 'Custom', 'Handmade', 'Microwave Safe', 'Dishwasher Safe'])
+        elif 'tote' in product_type.lower() or 'bag' in product_type.lower():
+            return random.choice(['Canvas', 'Organic', 'Eco-Friendly', 'Reusable', 'Recycled', 'Sustainable', 'Heavy Duty', 'Large Capacity'])
+        else:
+            return random.choice(['Handmade', 'Custom', 'Personalized', 'Unique', 'Handcrafted', 'Limited Edition', 'Exclusive', 'One of a Kind'])
+
+    def _get_design_feature(self, base_keyword, product_type):
+        """Get an appropriate design feature based on keyword and product type."""
+        if 'cat' in base_keyword.lower():
+            return random.choice(['Cat Design', 'Feline Art', 'Cat Lover', 'Kitty Pattern', 'Cat Themed'])
+        elif 'dog' in base_keyword.lower():
+            return random.choice(['Dog Design', 'Canine Art', 'Dog Lover', 'Puppy Pattern', 'Dog Themed'])
+        elif 'funny' in base_keyword.lower():
+            return random.choice(['Humorous Design', 'Funny Graphic', 'Joke Art', 'Comedy Design', 'Hilarious Graphic'])
+        elif 'art' in base_keyword.lower() or 'artist' in base_keyword.lower():
+            return random.choice(['Artistic Design', 'Fine Art', 'Creative Graphic', 'Artistic Pattern', 'Art Inspired'])
+        elif 'shirt' in product_type.lower() or 'tee' in product_type.lower():
+            return random.choice(['Graphic Design', 'Printed Tee', 'Unique Pattern', 'Artistic Graphic', 'Custom Design'])
+        elif 'hoodie' in product_type.lower() or 'sweatshirt' in product_type.lower():
+            return random.choice(['Graphic Design', 'Printed Hoodie', 'Unique Pattern', 'Cozy Design', 'Warm Graphic'])
+        else:
+            return random.choice(['Unique Design', 'Custom Graphic', 'Original Artwork', 'Creative Pattern', 'Artistic Design'])
+
+    def _get_art_type(self, product_type):
+        """Get an appropriate art type based on product type."""
+        if 'print' in product_type.lower() or 'poster' in product_type.lower():
+            return random.choice(['Artwork', 'Illustration', 'Digital Art', 'Fine Art', 'Graphic Art'])
+        elif 'wall art' in product_type.lower():
+            return random.choice(['Canvas Art', 'Wall Decor', 'Framed Art', 'Gallery Print', 'Wall Hanging'])
+        else:
+            return random.choice(['Design', 'Artwork', 'Illustration', 'Graphic', 'Pattern'])
+
+    def _get_size(self, product_type):
+        """Get an appropriate size based on product type."""
+        if 'print' in product_type.lower() or 'poster' in product_type.lower() or 'wall art' in product_type.lower():
+            return random.choice(['8x10', '11x14', '16x20', '18x24', 'Multiple Sizes'])
+        elif 'shirt' in product_type.lower() or 'tee' in product_type.lower():
+            return random.choice(['S-3XL', 'All Sizes', 'Multiple Sizes', 'S to 5XL', 'Unisex Sizes'])
+        else:
+            return random.choice(['Standard Size', 'Multiple Sizes', 'Custom Size', 'Various Sizes', 'Perfect Size'])
+
+    def _get_room(self, product_type):
+        """Get an appropriate room based on product type."""
+        if 'print' in product_type.lower() or 'poster' in product_type.lower() or 'wall art' in product_type.lower():
+            return random.choice(['Living Room', 'Bedroom', 'Home Office', 'Kitchen', 'Bathroom'])
+        elif 'pillow' in product_type.lower() or 'cushion' in product_type.lower():
+            return random.choice(['Living Room', 'Bedroom', 'Sofa', 'Couch', 'Bed'])
+        elif 'mug' in product_type.lower() or 'cup' in product_type.lower():
+            return random.choice(['Kitchen', 'Office', 'Home', 'Desk', 'Workplace'])
+        else:
+            return random.choice(['Home', 'Office', 'Room', 'Space', 'Interior'])
+
+    def _get_season(self):
+        """Get a random season."""
+        return random.choice(['Winter', 'Spring', 'Summer', 'Fall', 'All-Season'])
+
+    def _get_occasion(self):
+        """Get a random gift occasion."""
+        return random.choice(['Birthday', 'Christmas', 'Holiday', 'Anniversary', 'Special'])
+
+    def _get_recipient(self, base_keyword):
+        """Get an appropriate recipient based on keyword."""
+        if 'cat' in base_keyword.lower():
+            return random.choice(['Cat Lover', 'Cat Owner', 'Cat Mom', 'Cat Dad', 'Pet Lover'])
+        elif 'dog' in base_keyword.lower():
+            return random.choice(['Dog Lover', 'Dog Owner', 'Dog Mom', 'Dog Dad', 'Pet Lover'])
+        elif 'art' in base_keyword.lower() or 'artist' in base_keyword.lower():
+            return random.choice(['Art Lover', 'Art Enthusiast', 'Artist', 'Art Collector', 'Creative Person'])
+        elif 'funny' in base_keyword.lower() or 'humor' in base_keyword.lower():
+            return random.choice(['Humor Lover', 'Friend', 'Coworker', 'Family Member', 'Anyone'])
+        else:
+            return random.choice(['Anyone', 'Friend', 'Family', 'Loved One', 'Yourself'])
+
+    def optimize_description(self, base_keyword, product_type, tags=None, important_elements=None, original_description=None, original_title=None):
+        """
+        Optimize description for an Etsy listing.
+
+        Args:
+            base_keyword (str): The base keyword for optimization
+            product_type (str): The product type
+            tags (list, optional): List of optimized tags
+            important_elements (dict, optional): Dictionary of important elements to preserve
+            original_description (str, optional): The original listing description
+            original_title (str, optional): The original listing title
+
+        Returns:
+            str: Optimized description
+        """
         logger.info(f"Optimizing description for {base_keyword} {product_type}")
 
+        # Initialize important elements if not provided
+        if important_elements is None:
+            important_elements = {}
+
+        # Format product_type to be properly capitalized
+        formatted_product_type = product_type.replace('_', ' ').title()
+
+        # Determine the pet type from the base keyword and title
+        pet_type = "pet"
+        if original_title is None:
+            original_title = ""
+
+        if "cat" in base_keyword.lower() or "cat" in original_title.lower():
+            pet_type = "cat"
+        elif "dog" in base_keyword.lower() or "dog" in original_title.lower():
+            pet_type = "dog"
+
+        # Generate the optimized intro paragraph
+        intro_text = self._generate_optimized_intro(base_keyword, product_type, pet_type, important_elements)
+
+        # Check if we should use template manager
+        if self.template_manager is not None:
+            try:
+                # Get appropriate template for product type
+                template = self.template_manager.get_template(product_type)
+
+                # If we have a template, use it
+                if template:
+                    # Extract product name from base keyword and product type
+                    product_name = f"{base_keyword} {formatted_product_type}"
+
+                    # Apply template with optimized intro
+                    description = self.template_manager.apply_template(
+                        template,
+                        intro_text,
+                        product_name=product_name,
+                        product_type=formatted_product_type,
+                        keywords=tags,
+                        base_keyword=base_keyword
+                    )
+
+                    logger.info(f"Applied template for {product_type}")
+                    logger.info(f"Generated optimized description (length: {len(description)})")
+                    return description
+
+            except Exception as e:
+                logger.error(f"Error applying template: {e}")
+                # Fall back to standard description generation
+
+        # If template manager is not available or failed, use standard method
         # Select a random description template
         template = random.choice(self.description_templates)
 
         # Replace placeholders
-        description = template.replace('{keyword}', base_keyword).replace('{product_type}', product_type)
+        description = template.replace('{keyword}', base_keyword).replace('{product_type}', formatted_product_type)
+
+        # Replace generic pet references with specific pet type
+        if pet_type == "cat":
+            description = description.replace("pet lovers", "cat lovers")
+            description = description.replace("pet lover", "cat lover")
+            description = description.replace("pet people", "cat people")
+            description = description.replace("pet-themed", "cat-themed")
+            description = description.replace("pet love", "cat love")
+            description = description.replace("pet moms", "cat moms")
+            description = description.replace("pet dads", "cat dads")
+        elif pet_type == "dog":
+            # First, replace any cat references with dog references
+            description = description.replace("cat lovers", "dog lovers")
+            description = description.replace("cat lover", "dog lover")
+            description = description.replace("cat people", "dog people")
+            description = description.replace("cat-themed", "dog-themed")
+            description = description.replace("cat love", "dog love")
+            description = description.replace("cat moms", "dog moms")
+            description = description.replace("cat dads", "dog dads")
+            description = description.replace("cats", "dogs")
+            description = description.replace("cat", "dog")
+            description = description.replace("feline", "canine")
+            description = description.replace("purr", "bark")
+            description = description.replace("purr-fect", "paw-fect")
+
+            # Then replace any generic pet references
+            description = description.replace("pet lovers", "dog lovers")
+            description = description.replace("pet lover", "dog lover")
+            description = description.replace("pet people", "dog people")
+            description = description.replace("pet-themed", "dog-themed")
+            description = description.replace("pet love", "dog love")
+            description = description.replace("pet moms", "dog moms")
+            description = description.replace("pet dads", "dog dads")
 
         # Replace product_type_upper with uppercase product_type
-        description = description.replace('{product_type_upper}', product_type.upper())
+        description = description.replace('{product_type_upper}', formatted_product_type.upper())
+
+        # Add artist name if available
+        artist_name = important_elements.get('artist_name')
+        if artist_name and '{artist}' in description:
+            description = description.replace('{artist}', artist_name)
+        elif artist_name and artist_name.lower() not in description.lower():
+            # Add artist information if not already mentioned
+            artist_info = f"\n\n🎨 ARTIST INSPIRATION 🎨\nThis design is inspired by the work of {artist_name}, bringing a touch of fine art to everyday items."
+            description = description.replace("\n\n❓ QUESTIONS?", f"{artist_info}\n\n❓ QUESTIONS?")
+
+        # Add art style if available
+        art_style = important_elements.get('art_style')
+        if art_style and '{style}' in description:
+            description = description.replace('{style}', art_style)
+
+        # Add unique elements if available
+        unique_elements = important_elements.get('unique_elements', [])
+        if unique_elements:
+            unique_info = "\n• " + "\n• ".join(unique_elements)
+            description = description.replace("• Unique cat design", f"• Unique design featuring:{unique_info}")
 
         # Add tags as keywords at the end if provided
         if tags:
             description += "\n\n🔍 KEYWORDS: " + ", ".join(tags)
 
+        # Fix any instances of raw product_type with underscores
+        description = description.replace("art_print", "Art Print")
+        description = description.replace("t_shirt", "T-Shirt")
+        description = description.replace("wall_art", "Wall Art")
+        description = description.replace("home_decor", "Home Decor")
+
         logger.info(f"Generated optimized description (length: {len(description)})")
 
         return description
+
+    def _generate_optimized_intro(self, base_keyword, product_type, pet_type, important_elements):
+        """Generate an optimized introduction paragraph for a product description.
+
+        Args:
+            base_keyword (str): The base keyword for optimization
+            product_type (str): The product type
+            pet_type (str): The type of pet (cat, dog, pet)
+            important_elements (dict): Dictionary of important elements to preserve
+
+        Returns:
+            str: Optimized introduction paragraph
+        """
+        # Format product_type to be properly capitalized
+        formatted_product_type = product_type.replace('_', ' ').title()
+
+        # Get artist name if available
+        artist_name = important_elements.get('artist_name')
+
+        # Get art style if available
+        art_style = important_elements.get('art_style')
+
+        # Get unique elements if available
+        unique_elements = important_elements.get('unique_elements', [])
+
+        # Generate intro based on product type and available elements
+        if artist_name:
+            # Artist-inspired product
+            intro = f"Calling all {pet_type} lovers! This {artist_name} inspired {formatted_product_type} is purr-fect for showing your love for feline friends. "
+
+            if art_style:
+                intro += f"Featuring the iconic {art_style} style that made {artist_name} famous, "
+
+            if unique_elements:
+                elements_text = ", ".join(unique_elements[:2])
+                intro += f"this design showcases {elements_text} in a unique artistic interpretation. "
+
+            intro += f"Each {formatted_product_type} is carefully crafted to bring fine art into your everyday life."
+
+        elif "funny" in base_keyword.lower() or "humor" in base_keyword.lower():
+            # Funny product
+            intro = f"Show your sense of humor with this hilarious {base_keyword} {formatted_product_type}! "
+            intro += f"Perfect for {pet_type} lovers with a good sense of humor, this {formatted_product_type} is sure to get laughs and start conversations. "
+
+            if unique_elements:
+                elements_text = ", ".join(unique_elements[:2])
+                intro += f"Featuring {elements_text}, this design is both funny and stylish."
+
+        else:
+            # Standard product
+            intro = f"Show your love for {pet_type}s with this adorable {base_keyword} {formatted_product_type}! "
+            intro += f"Perfect for {pet_type} lovers, this {formatted_product_type} features a unique design that will make you stand out. "
+
+            if unique_elements:
+                elements_text = ", ".join(unique_elements[:2])
+                intro += f"The design showcases {elements_text}, making it a must-have for any {pet_type} enthusiast."
+
+        return intro
 
     def optimize_listing(self, base_keyword, product_type):
         """Optimize an Etsy listing with tags, title, and description."""

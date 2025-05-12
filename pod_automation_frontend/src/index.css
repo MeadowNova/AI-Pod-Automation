@@ -1,0 +1,23 @@
+:root {
+  --chart-grid-stroke: #e0e0e0;
+  --chart-tick-fill: #6b7280;
+  --chart-tooltip-bg: #ffffff;
+  --chart-tooltip-border: #cccccc;
+}
+
+html.dark {
+  --chart-grid-stroke: #444444;
+  --chart-tick-fill: #9ca3af;
+  --chart-tooltip-bg: #333333;
+  --chart-tooltip-border: #555555;
+}
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Add any custom base styles here */
+body {
+  @apply bg-gray-100 dark:bg-dark-bg text-light-text dark:text-dark-text; /* Changed bg-light-bg to bg-gray-100 */
+}
+
