@@ -1,13 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { ArrowPathIcon, SparklesIcon, InformationCircleIcon, DocumentTextIcon, CloudArrowUpIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import Button from '../components/Button'; // Import shared Button
+import { EtsyService, SeoService } from '../api';
 import type { EtsyListing } from '../api/models/EtsyListing';
 import type { ListingOptimizationRequest } from '../api/models/ListingOptimizationRequest';
 import type { ListingOptimizationResponse } from '../api/models/ListingOptimizationResponse';
 import { ApiError } from '../api/core/ApiError';
-// Import our service layer instead of direct API clients
-import * as EtsyServiceLayer from '../services/EtsyService';
-import * as SeoServiceLayer from '../services/SeoService';
+
+// Define a type for recommendation objects
+interface Recommendation {
+  category?: string;
+  score?: number;
+  feedback?: string;
+}
 
 interface SEOAnalysisDetail {
     score: number;
@@ -52,7 +57,8 @@ const SEOOptimizerPage: React.FC = () => {
   const [descriptionSuggestions, setDescriptionSuggestions] = useState<string[]>([]);
 
   const [seoAnalysis, setSeoAnalysis] = useState<SEOAnalysisState>(initialSeoAnalysisState);
-  const [optimizationResponse, setOptimizationResponse] = useState<ListingOptimizationResponse | null>(null);
+  // State to store the last optimization response
+  const [, setOptimizationResponse] = useState<ListingOptimizationResponse | null>(null);
 
   const fetchListings = async () => {
     console.log('fetchListings function called');
@@ -60,19 +66,14 @@ const SEOOptimizerPage: React.FC = () => {
     setError(null);
 
     try {
-      // Use our service layer which handles API calls with fallback to mock data if needed
-      console.log('About to call EtsyServiceLayer.getEtsyListings()');
-      const response = await EtsyServiceLayer.getEtsyListings();
-      console.log('Response from EtsyServiceLayer:', response);
+      // Call the API service directly
+      console.log('About to call EtsyService.getEtsyListings()');
+      const response = await EtsyService.getEtsyListings();
+      console.log('Response from EtsyService:', response);
 
       if (response.data) {
         console.log('Setting listings with data:', response.data);
         setListings(response.data);
-
-        // If using mock data, log this for development purposes
-        if (response.isMockData) {
-          console.info('Using mock Etsy listings data');
-        }
       } else {
         console.log('No data in response, setting empty listings array');
         setListings([]);
@@ -93,10 +94,14 @@ const SEOOptimizerPage: React.FC = () => {
 
   useEffect(() => {
     if (selectedListing) {
-      setCurrentTitle(selectedListing.title);
+      setCurrentTitle(selectedListing.title || '');
       setCurrentTags(selectedListing.tags || []);
-      setCurrentDescription(selectedListing.description);
-      updateSeoAnalysis(selectedListing.title, selectedListing.tags || [], selectedListing.description);
+      setCurrentDescription(selectedListing.description || '');
+      updateSeoAnalysis(
+        selectedListing.title || '',
+        selectedListing.tags || [],
+        selectedListing.description || ''
+      );
     } else {
       setCurrentTitle('');
       setCurrentTags([]);
@@ -154,17 +159,9 @@ const SEOOptimizerPage: React.FC = () => {
 
       console.log(`Requesting AI optimization for ${type} with data:`, request);
 
-      // Use our service layer to call the API
-      const { data: response, isMockData } = await SeoServiceLayer.optimizeListing(request);
+      // Call the API service directly
+      const response = await SeoService.optimizeListing(request);
       setOptimizationResponse(response);
-
-      // If using mock data, show a warning to the user
-      if (isMockData) {
-        console.warn('Using mock SEO optimization data - real AI optimization is not available');
-        setError('Using simulated data. The AI optimization service is not available.');
-      } else {
-        console.info('Successfully received real AI optimization data');
-      }
 
       // Update suggestions based on the optimization response
       if (type === 'title' && response.optimized_title) {
@@ -174,7 +171,7 @@ const SEOOptimizerPage: React.FC = () => {
 
       if (type === 'tags' && response.optimized_tags) {
         // Filter out tags that are already in the current tags
-        const newTagSuggestions = response.optimized_tags.filter(tag => !currentTags.includes(tag));
+        const newTagSuggestions = response.optimized_tags.filter((tag: string) => !currentTags.includes(tag));
         setTagSuggestions(newTagSuggestions);
         console.log('Received optimized tags:', response.optimized_tags);
       }
@@ -187,13 +184,13 @@ const SEOOptimizerPage: React.FC = () => {
 
       // Update SEO analysis based on the optimization response
       if (response.seo_score !== undefined) {
-        const titleFeedback = response.recommendations?.find(r => r.category === 'title')?.feedback || 'No feedback available';
-        const tagsFeedback = response.recommendations?.find(r => r.category === 'tags')?.feedback || 'No feedback available';
-        const descriptionFeedback = response.recommendations?.find(r => r.category === 'description')?.feedback || 'No feedback available';
+        const titleFeedback = response.recommendations?.find((r: Recommendation) => r.category === 'title')?.feedback || 'No feedback available';
+        const tagsFeedback = response.recommendations?.find((r: Recommendation) => r.category === 'tags')?.feedback || 'No feedback available';
+        const descriptionFeedback = response.recommendations?.find((r: Recommendation) => r.category === 'description')?.feedback || 'No feedback available';
 
-        const titleScore = response.recommendations?.find(r => r.category === 'title')?.score || 0;
-        const tagsScore = response.recommendations?.find(r => r.category === 'tags')?.score || 0;
-        const descriptionScore = response.recommendations?.find(r => r.category === 'description')?.score || 0;
+        const titleScore = response.recommendations?.find((r: Recommendation) => r.category === 'title')?.score || 0;
+        const tagsScore = response.recommendations?.find((r: Recommendation) => r.category === 'tags')?.score || 0;
+        const descriptionScore = response.recommendations?.find((r: Recommendation) => r.category === 'description')?.score || 0;
 
         setSeoAnalysis({
           overallScore: response.seo_score,
@@ -389,7 +386,7 @@ const SEOOptimizerPage: React.FC = () => {
                   placeholder="Enter a tag and press Add..."
                   value={currentTagInput}
                   onChange={handleTagInputChange}
-                  onKeyPress={(e) => e.key === 'Enter' && handleAddTag()}
+                  onKeyDown={(e) => e.key === 'Enter' && handleAddTag()}
                   className="flex-grow p-2 border border-gray-300 rounded-l-md focus:outline-none focus:ring-2 focus:ring-primary dark:bg-dark-card dark:border-dark-border dark:text-dark-text"
                 />
                 <Button variant="secondary" onClick={handleAddTag} disabled={currentTags.length >= 13 || currentTagInput.trim() === ''} className="rounded-l-none rounded-r-md border-l-0 border-gray-300 dark:border-dark-border px-3 py-1.5">
