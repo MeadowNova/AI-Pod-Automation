@@ -7,6 +7,7 @@ Etsy API integration in the pod_automation system.
 
 import logging
 import uuid
+import re
 from typing import Dict, List, Optional, Any, Union
 from datetime import datetime, timezone
 
@@ -25,6 +26,73 @@ from app.schemas.etsy import (
 )
 
 logger = logging.getLogger(__name__)
+
+def format_etsy_image_url(image_data, listing_id=None, size="794xN"):
+    """
+    Format Etsy image URL according to standard format.
+
+    Etsy image URLs follow this exact format:
+    https://i.etsystatic.com/12345678/r/il/abcdefg/1234567890/il_794xN.1234567890.jpg
+
+    Where:
+    - 12345678 is the shop ID
+    - abcdefg is the image ID
+    - 1234567890 is the listing ID
+    - il_794xN indicates the image size (794 pixels wide, with height proportional)
+
+    Common sizes:
+    - 75x75: Thumbnail
+    - 570xN: Medium
+    - 794xN: Large
+    - 1200xN: Extra Large
+
+    The 'N' in the size indicates that the height is proportional to maintain aspect ratio.
+
+    Args:
+        image_data: Image data from Etsy API
+        listing_id: Listing ID
+        size: Image size (default: 794xN)
+
+    Returns:
+        str: Formatted image URL
+    """
+    # Check if we have the necessary data
+    if not image_data:
+        logger.debug("No image data provided")
+        return ""
+
+    # Try to extract URL from image data
+    url = None
+    for size_key in ["url_570xN", "url_fullxfull", "url"]:
+        if size_key in image_data and image_data[size_key]:
+            url = image_data[size_key]
+            break
+
+    if not url:
+        logger.debug("No URL found in image data")
+        return ""
+
+    # Strict pattern matching for Etsy image URLs
+    # Format: https://i.etsystatic.com/12345678/r/il/abcdefg/1234567890/il_794xN.1234567890.jpg
+    etsy_url_pattern = r'https://i\.etsystatic\.com/(\w+)/r/il/(\w+)/(\d+)/il_(\d+x\w+)\.(\d+)\.jpg'
+    match = re.match(etsy_url_pattern, url)
+
+    if match:
+        # Extract components
+        shop_id = match.group(1)
+        image_id = match.group(2)
+        url_listing_id = match.group(3)
+        current_size = match.group(4)
+        filename = match.group(5)
+
+        # Ensure the listing ID in the URL matches the filename
+        if url_listing_id == filename:
+            # Replace size in URL
+            return url.replace(f"il_{current_size}", f"il_{size}")
+
+    # If the URL doesn't match the exact pattern, log it and return the original
+    logger.debug(f"URL does not match Etsy format: {url}")
+    return url
 
 class EtsyServiceAdapter:
     """Adapter for Etsy API services."""
@@ -273,7 +341,8 @@ class EtsyServiceAdapter:
             response = etsy_client.get_listings(
                 state=etsy_status,
                 limit=limit,
-                offset=offset
+                offset=offset,
+                includes=["Images"]  # Include image data in the response
             )
 
             # Extract listings from response
@@ -290,6 +359,14 @@ class EtsyServiceAdapter:
                     tags = listing["tags"]
 
                 # Create EtsyListing object
+                # Safely extract thumbnail URL, handling null/empty images array
+                thumbnail_url = ""
+                images = listing.get("images", [])
+                if images and isinstance(images, list) and len(images) > 0 and images[0]:
+                    # Format the image URL according to Etsy standards
+                    thumbnail_url = format_etsy_image_url(images[0], str(listing.get("listing_id")), "794xN")
+                    logger.debug(f"Using formatted thumbnail URL for listing {listing.get('listing_id')}: {thumbnail_url}")
+
                 etsy_listing = EtsyListing(
                     id=str(listing["listing_id"]),
                     title=listing["title"],
@@ -297,7 +374,7 @@ class EtsyServiceAdapter:
                     tags=tags,
                     price=float(listing.get("price", {}).get("amount", 0) / 100) if isinstance(listing.get("price", {}), dict) else 0,
                     status=listing.get("state", "active"),
-                    thumbnail_url=listing.get("images", [{}])[0].get("url_570xN", "") if listing.get("images") else "",
+                    thumbnail_url=thumbnail_url,
                     seo_score=None  # We'll calculate this separately
                 )
                 listings.append(etsy_listing)
@@ -356,10 +433,13 @@ class EtsyServiceAdapter:
             elif "tags" in response:
                 tags = response["tags"]
 
-            # Extract image URL
+            # Extract image URL - safely handle null/empty images array
             thumbnail_url = ""
-            if "images" in response and response["images"] and len(response["images"]) > 0:
-                thumbnail_url = response["images"][0].get("url_570xN", "")
+            images = response.get("images", [])
+            if images and isinstance(images, list) and len(images) > 0 and images[0]:
+                # Format the image URL according to Etsy standards
+                thumbnail_url = format_etsy_image_url(images[0], listing_id, "794xN")
+                logger.debug(f"Using formatted thumbnail URL for listing {listing_id}: {thumbnail_url}")
 
             # Create EtsyListing object
             etsy_listing = EtsyListing(
