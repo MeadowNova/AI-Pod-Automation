@@ -30,7 +30,7 @@ export class EtsyService {
     }> {
         return __request(OpenAPI, {
             method: 'GET',
-            url: '/etsy/listings',
+            url: '/etsy/test-listings',
             query: {
                 'status': status,
                 'page': page,

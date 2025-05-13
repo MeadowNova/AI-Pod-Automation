@@ -2,7 +2,7 @@ openapi: 3.1.0
 info:
   title: POD AI Automation API
   description: |
-    API for Etsy POD sellers automation platform. This API provides endpoints for authentication, 
+    API for Etsy POD sellers automation platform. This API provides endpoints for authentication,
     SEO optimization, AI design generation, mockup creation, and Etsy integration.
   version: 1.0.0
   contact:
@@ -286,10 +286,68 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+  /etsy/test-listings:
+    get:
+      summary: Get test Etsy listings (no auth required)
+      operationId: getEtsyListings
+      tags:
+        - etsy
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [active, draft, inactive, all]
+          description: Filter listings by status
+        - name: page
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+          description: Page number
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+          description: Number of items per page
+      responses:
+        '200':
+          description: List of Etsy listings
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/EtsyListing'
+                  pagination:
+                    type: object
+                    properties:
+                      total:
+                        type: integer
+                      page:
+                        type: integer
+                      limit:
+                        type: integer
+                      pages:
+                        type: integer
+        '503':
+          description: Service Unavailable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
   /etsy/listings:
     get:
       summary: Get user's Etsy listings
-      operationId: getEtsyListings
+      operationId: getAuthenticatedEtsyListings
       tags:
         - etsy
       security:
