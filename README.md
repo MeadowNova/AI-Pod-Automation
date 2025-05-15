@@ -43,30 +43,27 @@ pip install -e .
 python -m pod_automation --setup
 ```
 
-#### Docker Development Environment
+#### Development Environment
 
-For a containerized development environment with live code reloading:
+#### Unified Development Environment
 
-1. Make sure Docker and Docker Compose are installed on your system
+For a streamlined development experience that runs all components concurrently with hot reloading:
 
-2. Run the development script:
+1. Local development (requires Node.js, Python, and their dependencies):
 ```bash
-./dev.sh
+./dev-unified.sh
 ```
 
-3. Access the Streamlit dashboard at http://localhost:8501
-
-4. Make changes to your code and see them reflected immediately in the browser
-
-5. View logs with:
+2. Docker-based development (requires only Docker and Docker Compose):
 ```bash
-docker-compose -f docker-compose.dev.yml logs -f
+./dev-docker-unified.sh
 ```
 
-6. Stop the development environment:
-```bash
-docker-compose -f docker-compose.dev.yml down
-```
+Both options will start:
+- Backend API at http://localhost:8001
+- Frontend at http://localhost:5173
+
+All components feature hot reloading, so changes to your code will be reflected immediately.
 
 #### Docker Production Deployment
 
@@ -211,6 +208,8 @@ python -m pod_automation --run --keyword "cat lover" --products "t-shirt,poster"
 
 # Run the interactive dashboard
 python -m pod_automation --dashboard
+
+
 ```
 
 ## Contributing
