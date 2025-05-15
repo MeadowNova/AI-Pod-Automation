@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 class OllamaClient:
     """Client for interacting with Ollama API."""
 
-    def __init__(self, base_url="http://localhost:11434",
+    def __init__(self, base_url="http://host.docker.internal:11434",
                  generation_model="mistral:latest",
                  embedding_model="nomic-embed-text:latest"):
         """Initialize Ollama client with separate models for generation and embeddings.
@@ -28,7 +28,7 @@ class OllamaClient:
             generation_model (str): Model to use for text generation
             embedding_model (str): Model to use for embeddings
         """
-        self.base_url = base_url
+        self.base_url = "http://host.docker.internal:11434"  # Force correct URL for Docker environment - this is the special DNS name that allows containers to access the host machine
         self.generation_model = generation_model
         self.embedding_model = embedding_model
 

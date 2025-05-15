@@ -15,7 +15,12 @@ services:
       - pod_network_dev
     environment:
       - PYTHONUNBUFFERED=1
-      - PYTHONPATH=/app:/app/pod_automation:/pod_automation_api  # Set PYTHONPATH to include all necessary directories
+      - PYTHONPATH=/app:/pod_automation  # Corrected PYTHONPATH to include the right directories
+      # Note: The Ollama connection is hardcoded in the OllamaClient class to use host.docker.internal:11434
+      # This allows the container to connect to the Ollama service running on the host machine
+      # The following environment variables are kept for reference but not actually used
+      - AI_MODEL_HOST=http://host.docker.internal:11434  # Point to the Ollama service on the host
+      - AI_MODEL_NAME=mistral:latest  # Specify the preferred model
     env_file:
       - .env.dev
     command: uvicorn app.main:app --reload --host 0.0.0.0 --port 8001
@@ -26,6 +31,8 @@ services:
       timeout: 10s
       retries: 3
       start_period: 5s
+    depends_on:
+      - ollama  # Make sure Ollama is started before the API
 
   pod-frontend-dev:
     build:
@@ -44,6 +51,35 @@ services:
       - VITE_API_URL=http://localhost:8001/api/v1
     command: npm run dev -- --host 0.0.0.0
 
+  # Add Ollama service for AI model serving
+  ollama:
+    image: ollama/ollama:latest
+    container_name: pod-ollama
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:11434:11434"  # Restrict to localhost for security
+    volumes:
+      - ollama_data:/root/.ollama  # Persist models and data
+    networks:
+      - pod_network_dev
+    # Add healthcheck to verify Ollama is running
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:11434/api/tags"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s  # Longer start period as models may take time to load
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+
 networks:
   pod_network_dev:
     driver: bridge
+
+volumes:
+  ollama_data:  # Define a named volume for Ollama data
