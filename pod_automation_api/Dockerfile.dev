@@ -1,0 +1,31 @@
+FROM python:3.12-slim
+
+WORKDIR /pod_automation_api
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Python dependencies
+COPY requirements.txt requirements.extended.txt ./
+RUN pip install --no-cache-dir -r requirements.txt -r requirements.extended.txt
+
+# Copy application code
+COPY . /pod_automation_api
+
+# Copy and set up the entrypoint scripts
+COPY minimal_entrypoint.sh /usr/local/bin/
+RUN chmod +x /usr/local/bin/minimal_entrypoint.sh
+
+# Set environment variable for Python path
+ENV PYTHONPATH="/app:/app/pod_automation:/pod_automation_api"
+
+# Expose port
+EXPOSE 8001
+
+# Use the minimal entrypoint script
+ENTRYPOINT ["minimal_entrypoint.sh"]
+
+# Command to run development server
+CMD ["uvicorn", "app.main:app", "--reload", "--host", "0.0.0.0", "--port", "8001"]

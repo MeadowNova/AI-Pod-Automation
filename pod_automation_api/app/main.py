@@ -12,6 +12,7 @@ from fastapi.exceptions import RequestValidationError
 
 from app.api.api import api_router
 from app.core.config import settings
+from app.adapters import etsy_adapter
 
 # Configure logging
 logging.basicConfig(
@@ -39,8 +40,17 @@ if settings.BACKEND_CORS_ORIGINS:
         allow_headers=["*"],
     )
 
-# Add API router
 app.include_router(api_router, prefix=settings.API_V1_STR)
+
+@app.on_event("startup")
+async def startup():
+    """Initialize services on startup."""
+    # Initialize Etsy adapter
+    if not etsy_adapter.etsy_service.initialized:
+        # Re-initialize the adapter
+        etsy_adapter.etsy_service = etsy_adapter.EtsyServiceAdapter()
+        if not etsy_adapter.etsy_service.initialized:
+            raise RuntimeError("Failed to initialize Etsy service adapter")
 
 
 def custom_openapi():
