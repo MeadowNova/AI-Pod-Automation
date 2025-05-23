@@ -4,6 +4,7 @@ from pathlib import Path
 import yaml
 import json
 
+import sentry_sdk
 from fastapi import FastAPI, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.openapi.utils import get_openapi
@@ -13,6 +14,20 @@ from fastapi.exceptions import RequestValidationError
 from app.api.api import api_router
 from app.core.config import settings
 from app.adapters import etsy_adapter
+
+# Initialize Sentry for error monitoring and performance tracking
+sentry_sdk.init(
+    dsn="https://5116336a0440e5e55e95e1b07de14db1@o4509373980344320.ingest.us.sentry.io/4509374289149952",
+    # Set traces_sample_rate to 1.0 to capture 100% of transactions for performance monitoring.
+    # We recommend adjusting this value in production (e.g., 0.1 for 10% sampling)
+    traces_sample_rate=1.0,
+    # Add data like request headers and IP for users,
+    # see https://docs.sentry.io/platforms/python/data-management/data-collected/ for more info
+    send_default_pii=True,
+    # Set profiles_sample_rate to 1.0 to profile 100% of sampled transactions.
+    # We recommend adjusting this value in production.
+    profiles_sample_rate=1.0,
+)
 
 # Configure logging
 logging.basicConfig(
@@ -135,6 +150,15 @@ def health_check():
     Health check endpoint for monitoring.
     """
     return {"status": "healthy"}
+
+
+@app.get("/sentry-debug")
+async def trigger_error():
+    """
+    Debug endpoint to test Sentry error reporting.
+    This will trigger a division by zero error that will be sent to Sentry.
+    """
+    division_by_zero = 1 / 0
 
 
 if __name__ == "__main__":

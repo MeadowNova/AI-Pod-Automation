@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowPathIcon, SparklesIcon, InformationCircleIcon, DocumentTextIcon, CloudArrowUpIcon, XMarkIcon } from '@heroicons/react/24/outline';
+import { ArrowPathIcon, SparklesIcon, InformationCircleIcon, DocumentTextIcon, CloudArrowUpIcon, XMarkIcon, EyeIcon, CheckIcon, ArrowRightIcon } from '@heroicons/react/24/outline';
 import Button from '../components/Button'; // Import shared Button
 import type { EtsyListing } from '../api/models/EtsyListing';
 import type { ListingOptimizationRequest } from '../api/models/ListingOptimizationRequest';
@@ -54,6 +54,9 @@ const SEOOptimizerPage: React.FC = () => {
 
   const [seoAnalysis, setSeoAnalysis] = useState<SEOAnalysisState>(initialSeoAnalysisState);
   const [optimizationResponse, setOptimizationResponse] = useState<ListingOptimizationResponse | null>(null);
+  const [showBeforeAfter, setShowBeforeAfter] = useState(false);
+  const [selectedListings, setSelectedListings] = useState<string[]>([]);
+  const [batchOptimizing, setBatchOptimizing] = useState(false);
 
   const fetchListings = async () => {
     console.log('fetchListings function called');
@@ -270,11 +273,151 @@ const SEOOptimizerPage: React.FC = () => {
     }
   };
 
+  const handleBatchOptimize = async () => {
+    if (selectedListings.length === 0) return;
+
+    setBatchOptimizing(true);
+    setError(null);
+
+    try {
+      // Prepare batch request
+      const batchListings = selectedListings.map(listingId => {
+        const listing = listings.find(l => l.id === listingId);
+        return {
+          id: listingId,
+          title: listing?.title || '',
+          tags: listing?.tags || [],
+          description: listing?.description || ''
+        };
+      });
+
+      // Call batch optimization API (placeholder for now)
+      console.log('Would optimize batch:', batchListings);
+      alert(`Batch optimization for ${selectedListings.length} listings would be processed`);
+    } catch (err) {
+      console.error('Error in batch optimization:', err);
+      setError(err instanceof ApiError ? err.message : 'Failed to optimize listings in batch');
+    } finally {
+      setBatchOptimizing(false);
+    }
+  };
+
+  const toggleListingSelection = (listingId: string) => {
+    setSelectedListings(prev =>
+      prev.includes(listingId)
+        ? prev.filter(id => id !== listingId)
+        : [...prev, listingId]
+    );
+  };
+
+  const BeforeAfterComparison = ({ response }: { response: ListingOptimizationResponse }) => (
+    <div className="bg-gray-50 dark:bg-dark-card/50 p-4 rounded-lg space-y-4">
+      <div className="flex items-center justify-between">
+        <h4 className="text-lg font-semibold text-light-text dark:text-dark-text">Before vs After Comparison</h4>
+        <div className="flex items-center space-x-2">
+          {response.original_seo_score !== undefined && response.improvement_percentage !== undefined && (
+            <span className={`px-2 py-1 rounded text-sm font-medium ${
+              response.improvement_percentage > 0 ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' :
+              response.improvement_percentage < 0 ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200' :
+              'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200'
+            }`}>
+              {response.improvement_percentage > 0 ? '+' : ''}{response.improvement_percentage.toFixed(1)}% improvement
+            </span>
+          )}
+          {response.processing_time_ms && (
+            <span className="text-xs text-gray-500 dark:text-gray-400">
+              {response.processing_time_ms}ms
+            </span>
+          )}
+        </div>
+      </div>
+
+      {/* Score Comparison */}
+      <div className="grid grid-cols-2 gap-4">
+        <div className="text-center">
+          <h5 className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">Original Score</h5>
+          <div className={`text-2xl font-bold ${getSeoScoreColor(response.original_seo_score || 0)} text-white rounded-lg py-2`}>
+            {response.original_seo_score || 0}/100
+          </div>
+        </div>
+        <div className="text-center">
+          <h5 className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">Optimized Score</h5>
+          <div className={`text-2xl font-bold ${getSeoScoreColor(response.seo_score)} text-white rounded-lg py-2`}>
+            {response.seo_score}/100
+          </div>
+        </div>
+      </div>
+
+      {/* Content Comparison */}
+      <div className="space-y-4">
+        {/* Title Comparison */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <div>
+            <h5 className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">Original Title</h5>
+            <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded text-sm">
+              {response.original_title || 'No original title'}
+            </div>
+          </div>
+          <div>
+            <h5 className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">Optimized Title</h5>
+            <div className="p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded text-sm">
+              {response.optimized_title || 'No optimized title'}
+            </div>
+          </div>
+        </div>
+
+        {/* Tags Comparison */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <div>
+            <h5 className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">
+              Original Tags ({response.original_tags?.length || 0}/13)
+            </h5>
+            <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded">
+              <div className="flex flex-wrap gap-1">
+                {response.original_tags?.map((tag, i) => (
+                  <span key={i} className="bg-red-100 dark:bg-red-800 text-red-800 dark:text-red-200 px-2 py-1 rounded text-xs">
+                    {tag}
+                  </span>
+                )) || <span className="text-gray-500">No tags</span>}
+              </div>
+            </div>
+          </div>
+          <div>
+            <h5 className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">
+              Optimized Tags ({response.optimized_tags?.length || 0}/13)
+            </h5>
+            <div className="p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded">
+              <div className="flex flex-wrap gap-1">
+                {response.optimized_tags?.map((tag, i) => (
+                  <span key={i} className="bg-green-100 dark:bg-green-800 text-green-800 dark:text-green-200 px-2 py-1 rounded text-xs">
+                    {tag}
+                  </span>
+                )) || <span className="text-gray-500">No tags</span>}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
   return (
     <div className="flex flex-col lg:flex-row gap-6 h-full">
       {/* Left Panel: Listing Management */}
       <div className="lg:w-1/3 bg-white dark:bg-dark-bg p-6 rounded-lg shadow space-y-4 flex flex-col">
-        <h2 className="text-xl font-semibold text-light-text dark:text-dark-text">Your Etsy Listings</h2>
+        <div className="flex items-center justify-between">
+          <h2 className="text-xl font-semibold text-light-text dark:text-dark-text">Your Etsy Listings</h2>
+          {selectedListings.length > 0 && (
+            <Button
+              variant="primary"
+              onClick={handleBatchOptimize}
+              disabled={batchOptimizing}
+              className="text-sm px-3 py-1"
+            >
+              {batchOptimizing ? 'Optimizing...' : `Optimize ${selectedListings.length}`}
+            </Button>
+          )}
+        </div>
         <div className="flex items-center space-x-2">
           <input
             type="text"
@@ -287,6 +430,11 @@ const SEOOptimizerPage: React.FC = () => {
             <ArrowPathIcon className={`h-5 w-5 ${isLoadingListings ? 'animate-spin' : ''}`} />
           </Button>
         </div>
+        {selectedListings.length > 0 && (
+          <div className="text-sm text-gray-600 dark:text-gray-400 bg-blue-50 dark:bg-blue-900/20 p-2 rounded">
+            {selectedListings.length} listing{selectedListings.length !== 1 ? 's' : ''} selected for batch optimization
+          </div>
+        )}
         <div className="flex-grow overflow-y-auto space-y-3 pr-1">
           {isLoadingListings ? (
             <p className="text-light-text-secondary dark:text-dark-text-secondary">Loading listings...</p>
@@ -302,24 +450,35 @@ const SEOOptimizerPage: React.FC = () => {
             filteredListings.map(listing => (
               <div
                 key={listing.id}
-                onClick={() => handleSelectListing(listing)}
-                className={`p-3 border rounded-lg cursor-pointer hover:border-primary dark:hover:border-primary-light transition-colors flex items-center space-x-3 ${selectedListing?.id === listing.id ? 'border-primary dark:border-primary-light bg-primary-light/10 dark:bg-primary/10' : 'border-gray-200 dark:border-dark-border'}`}
+                className={`p-3 border rounded-lg transition-colors flex items-center space-x-3 ${selectedListing?.id === listing.id ? 'border-primary dark:border-primary-light bg-primary-light/10 dark:bg-primary/10' : 'border-gray-200 dark:border-dark-border'}`}
               >
-                <img
-                  src={listing.thumbnail_url && listing.thumbnail_url.length > 0 ? listing.thumbnail_url : '/placeholder-image.png'}
-                  alt={listing.title}
-                  className="w-16 h-16 object-cover rounded-md bg-gray-200 dark:bg-dark-border"
-                  onError={(e) => {
-                    (e.target as HTMLImageElement).src = '/placeholder-image.png';
-                  }}
+                <input
+                  type="checkbox"
+                  checked={selectedListings.includes(listing.id)}
+                  onChange={() => toggleListingSelection(listing.id)}
+                  className="w-4 h-4 text-primary bg-gray-100 border-gray-300 rounded focus:ring-primary dark:focus:ring-primary dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+                  onClick={(e) => e.stopPropagation()}
                 />
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-light-text dark:text-dark-text truncate">{listing.title}</p>
-                  <div className="flex items-center text-xs mt-1">
-                    <span className={`w-3 h-3 rounded-full mr-1.5 ${getSeoScoreColor(listing.seo_score || 0)}`}></span>
-                    <span className="text-light-text-secondary dark:text-dark-text-secondary">
-                      {listing.seo_score !== undefined ? `${listing.seo_score}/100` : 'No score'} | {listing.status || 'Unknown'}
-                    </span>
+                <div
+                  onClick={() => handleSelectListing(listing)}
+                  className="flex items-center space-x-3 flex-1 cursor-pointer"
+                >
+                  <img
+                    src={listing.thumbnail_url && listing.thumbnail_url.length > 0 ? listing.thumbnail_url : '/placeholder-image.png'}
+                    alt={listing.title}
+                    className="w-16 h-16 object-cover rounded-md bg-gray-200 dark:bg-dark-border"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src = '/placeholder-image.png';
+                    }}
+                  />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-light-text dark:text-dark-text truncate">{listing.title}</p>
+                    <div className="flex items-center text-xs mt-1">
+                      <span className={`w-3 h-3 rounded-full mr-1.5 ${getSeoScoreColor(listing.seo_score || 0)}`}></span>
+                      <span className="text-light-text-secondary dark:text-dark-text-secondary">
+                        {listing.seo_score !== undefined ? `${listing.seo_score}/100` : 'No score'} | {listing.status || 'Unknown'}
+                      </span>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -344,16 +503,51 @@ const SEOOptimizerPage: React.FC = () => {
             <h2 className="text-xl font-semibold text-light-text dark:text-dark-text">Optimize: <span className="text-primary dark:text-primary-light">{selectedListing.title}</span></h2>
 
             <div className="p-4 border border-gray-200 dark:border-dark-border rounded-lg">
-                <h3 className="text-lg font-semibold mb-2 text-light-text dark:text-dark-text">Overall SEO Score: {seoAnalysis.overallScore}/100</h3>
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className="text-lg font-semibold text-light-text dark:text-dark-text">Overall SEO Score: {seoAnalysis.overallScore}/100</h3>
+                  {optimizationResponse && (
+                    <Button
+                      variant="outline"
+                      onClick={() => setShowBeforeAfter(!showBeforeAfter)}
+                      className="text-sm px-3 py-1"
+                    >
+                      <EyeIcon className="h-4 w-4 mr-1" />
+                      {showBeforeAfter ? 'Hide' : 'Show'} Comparison
+                    </Button>
+                  )}
+                </div>
                 <div className="w-full bg-gray-200 rounded-full h-4 dark:bg-dark-border mb-2">
                     <div className={`h-4 rounded-full ${getSeoScoreColor(seoAnalysis.overallScore)}`} style={{ width: `${seoAnalysis.overallScore}%` }}></div>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-                    <div><strong className="block text-light-text-secondary dark:text-dark-text-secondary">Title:</strong> {seoAnalysis.title.feedback} ({seoAnalysis.title.score}/100)</div>
-                    <div><strong className="block text-light-text-secondary dark:text-dark-text-secondary">Tags ({seoAnalysis.tags.count}/13):</strong> {seoAnalysis.tags.feedback} ({seoAnalysis.tags.score}/100)</div>
-                    <div><strong className="block text-light-text-secondary dark:text-dark-text-secondary">Description:</strong> {seoAnalysis.description.feedback} ({seoAnalysis.description.score}/100)</div>
+                    <div className="group relative">
+                      <strong className="block text-light-text-secondary dark:text-dark-text-secondary">Title:</strong>
+                      {seoAnalysis.title.feedback} ({seoAnalysis.title.score}/100)
+                      <div className="absolute bottom-full left-0 mb-2 hidden group-hover:block bg-black text-white text-xs rounded p-2 whitespace-nowrap z-10">
+                        Optimal: 120-140 characters with relevant keywords in first 40 chars
+                      </div>
+                    </div>
+                    <div className="group relative">
+                      <strong className="block text-light-text-secondary dark:text-dark-text-secondary">Tags ({seoAnalysis.tags.count}/13):</strong>
+                      {seoAnalysis.tags.feedback} ({seoAnalysis.tags.score}/100)
+                      <div className="absolute bottom-full left-0 mb-2 hidden group-hover:block bg-black text-white text-xs rounded p-2 whitespace-nowrap z-10">
+                        Use all 13 tags, max 20 characters each, mix broad and specific terms
+                      </div>
+                    </div>
+                    <div className="group relative">
+                      <strong className="block text-light-text-secondary dark:text-dark-text-secondary">Description:</strong>
+                      {seoAnalysis.description.feedback} ({seoAnalysis.description.score}/100)
+                      <div className="absolute bottom-full left-0 mb-2 hidden group-hover:block bg-black text-white text-xs rounded p-2 whitespace-nowrap z-10">
+                        Include materials, sizes, care instructions, and shipping info
+                      </div>
+                    </div>
                 </div>
             </div>
+
+            {/* Before/After Comparison */}
+            {showBeforeAfter && optimizationResponse && (
+              <BeforeAfterComparison response={optimizationResponse} />
+            )}
 
             <div className="space-y-2">
               <label htmlFor="title" className="block text-sm font-medium text-light-text-secondary dark:text-dark-text-secondary">Title ({currentTitle.length}/140)</label>

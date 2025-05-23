@@ -1,4 +1,6 @@
 from typing import Any, List
+import time
+import logging
 
 from fastapi import APIRouter, Depends, HTTPException, status
 
@@ -13,6 +15,7 @@ from app.adapters.seo_adapter import seo_service
 from app.adapters.etsy_adapter import etsy_service
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
 
 
 @router.post("/optimize-listing", response_model=ListingOptimizationResponse)
@@ -22,7 +25,13 @@ async def optimize_etsy_listing(
 ) -> Any:
     """
     Optimize an Etsy listing's SEO using AI.
+
+    This endpoint analyzes the current listing content and provides AI-generated
+    optimizations for title, tags, and description to improve SEO performance.
     """
+    start_time = time.time()
+    logger.info(f"Starting SEO optimization for listing {request.listing_id} by user {current_user}")
+
     try:
         # First, check if the listing exists
         listing = await etsy_service.get_listing(
@@ -42,8 +51,12 @@ async def optimize_etsy_listing(
             current_description=request.current_description or (listing.description if listing else None)
         )
 
+        processing_time = time.time() - start_time
+        logger.info(f"SEO optimization completed for listing {request.listing_id} in {processing_time:.2f}s")
+
         return optimization_result
     except RuntimeError as e:
+        logger.error(f"Runtime error optimizing listing {request.listing_id}: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail=str(e)

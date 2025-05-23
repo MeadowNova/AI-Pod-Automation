@@ -11,3 +11,4 @@ supabase>=1.0.0
 requests>=2.25.0
 python-dotenv>=0.15.0
 torch>=2.0.0  # For GPU acceleration with your NVIDIA RTX 4070
+sentry-sdk[fastapi]>=1.40.0  # Error monitoring and performance tracking
