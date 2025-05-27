@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowPathIcon, SparklesIcon, InformationCircleIcon, DocumentTextIcon, CloudArrowUpIcon, XMarkIcon, EyeIcon, CheckIcon, ArrowRightIcon } from '@heroicons/react/24/outline';
+import { ArrowPathIcon, SparklesIcon, InformationCircleIcon, DocumentTextIcon, CloudArrowUpIcon, XMarkIcon, EyeIcon } from '@heroicons/react/24/outline';
 import Button from '../components/Button'; // Import shared Button
 import type { EtsyListing } from '../api/models/EtsyListing';
 import type { ListingOptimizationRequest } from '../api/models/ListingOptimizationRequest';
@@ -8,6 +8,7 @@ import { ApiError } from '../api/core/ApiError';
 // Import our service layer instead of direct API clients
 import { EtsyService } from '../api/services/EtsyService';
 import { SeoService } from '../api/services/SeoService';
+
 
 interface SEOAnalysisDetail {
     score: number;
@@ -144,6 +145,8 @@ const SEOOptimizerPage: React.FC = () => {
     updateSeoAnalysis(currentTitle, newTags, currentDescription);
   };
 
+
+
   const fetchAISuggestions = async (type: 'title' | 'tags' | 'description') => {
     if (!selectedListing) return;
 
@@ -151,6 +154,9 @@ const SEOOptimizerPage: React.FC = () => {
     setError(null);
 
     try {
+      // Development mode: Skip authentication for testing
+      console.log('🔧 Development mode: Skipping authentication for SEO optimization testing');
+
       const request: ListingOptimizationRequest = {
         listing_id: selectedListing.id,
         current_title: currentTitle,
@@ -158,7 +164,7 @@ const SEOOptimizerPage: React.FC = () => {
         current_description: currentDescription
       };
 
-      console.log(`Requesting AI optimization for ${type} with data:`, request);
+      console.log(`🔍 Requesting AI optimization for ${type} with data:`, request);
 
       // Use the generated API service
       const response = await SeoService.optimizeListing(request);
@@ -185,15 +191,18 @@ const SEOOptimizerPage: React.FC = () => {
       }
 
       // Update SEO analysis based on the optimization response
-      // @ts-ignore - Using any type for recommendations as the exact structure is not known
       if (response.seo_score !== undefined) {
-        const titleFeedback = response.recommendations?.find((r: any) => r.category === 'title')?.feedback || 'No feedback available';
-        const tagsFeedback = response.recommendations?.find((r: any) => r.category === 'tags')?.feedback || 'No feedback available';
-        const descriptionFeedback = response.recommendations?.find((r: any) => r.category === 'description')?.feedback || 'No feedback available';
+        const titleRecommendation = response.recommendations?.find(r => r.category === 'title');
+        const tagsRecommendation = response.recommendations?.find(r => r.category === 'tags');
+        const descriptionRecommendation = response.recommendations?.find(r => r.category === 'description');
 
-        const titleScore = response.recommendations?.find((r: any) => r.category === 'title')?.score || 0;
-        const tagsScore = response.recommendations?.find((r: any) => r.category === 'tags')?.score || 0;
-        const descriptionScore = response.recommendations?.find((r: any) => r.category === 'description')?.score || 0;
+        const titleFeedback = titleRecommendation?.feedback || 'No feedback available';
+        const tagsFeedback = tagsRecommendation?.feedback || 'No feedback available';
+        const descriptionFeedback = descriptionRecommendation?.feedback || 'No feedback available';
+
+        const titleScore = titleRecommendation?.score || 0;
+        const tagsScore = tagsRecommendation?.score || 0;
+        const descriptionScore = descriptionRecommendation?.score || 0;
 
         setSeoAnalysis({
           overallScore: response.seo_score,
@@ -206,6 +215,7 @@ const SEOOptimizerPage: React.FC = () => {
       }
     } catch (err) {
       console.error('Error optimizing listing:', err);
+
       if (err instanceof ApiError) {
         const errorMessage = `API Error (${err.status}): ${err.message}`;
         setError(errorMessage);
@@ -342,8 +352,8 @@ const SEOOptimizerPage: React.FC = () => {
         </div>
         <div className="text-center">
           <h5 className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">Optimized Score</h5>
-          <div className={`text-2xl font-bold ${getSeoScoreColor(response.seo_score)} text-white rounded-lg py-2`}>
-            {response.seo_score}/100
+          <div className={`text-2xl font-bold ${getSeoScoreColor(response.seo_score || 0)} text-white rounded-lg py-2`}>
+            {response.seo_score || 0}/100
           </div>
         </div>
       </div>
@@ -374,7 +384,7 @@ const SEOOptimizerPage: React.FC = () => {
             </h5>
             <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded">
               <div className="flex flex-wrap gap-1">
-                {response.original_tags?.map((tag, i) => (
+                {response.original_tags?.map((tag: string, i: number) => (
                   <span key={i} className="bg-red-100 dark:bg-red-800 text-red-800 dark:text-red-200 px-2 py-1 rounded text-xs">
                     {tag}
                   </span>

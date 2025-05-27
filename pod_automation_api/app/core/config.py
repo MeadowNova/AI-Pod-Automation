@@ -39,9 +39,16 @@ class Settings(BaseSettings):
     STRIPE_API_KEY: str = ""
     STRIPE_WEBHOOK_SECRET: str = ""
 
-    # AI Model
+    # AI Model (Ollama - Legacy)
     AI_MODEL_HOST: str = "http://localhost:11434"
     AI_MODEL_NAME: str = "qwen3:8b"
+
+    # OpenAI API
+    OPENAI_API_KEY: str = ""
+    OPENAI_MODEL: str = "gpt-4o"
+
+    # Development Mode
+    DEV_MODE_BYPASS_AUTH: bool = False
 
     model_config = SettingsConfigDict(
         case_sensitive=True,

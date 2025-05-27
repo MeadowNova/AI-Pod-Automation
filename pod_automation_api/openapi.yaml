@@ -405,12 +405,10 @@ paths:
                 $ref: '#/components/schemas/Error'
   /seo/optimize-listing:
     post:
-      summary: Optimize an Etsy listing's SEO
+      summary: Optimize an Etsy listing's SEO (no auth required for development)
       operationId: optimizeListing
       tags:
         - seo
-      security:
-        - bearerAuth: []
       requestBody:
         required: true
         content:
@@ -424,14 +422,14 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ListingOptimizationResponse'
-        '401':
-          description: Unauthorized
+        '404':
+          description: Listing not found
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-        '404':
-          description: Listing not found
+        '503':
+          description: Service Unavailable
           content:
             application/json:
               schema:

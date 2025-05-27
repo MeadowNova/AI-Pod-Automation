@@ -31,9 +31,10 @@ const StatCard: React.FC<StatCardProps> = ({ title, value, change, icon: Icon })
 
 // Placeholder data
 const quickActions = [
-  { label: 'Find New Trends', to: '/trends' },
-  { label: 'Create Design', to: '/ai-studio' },
-  { label: 'View Listings', to: '/listings' },
+  { label: 'Find New Trends', to: '/dashboard/trends' },
+  { label: 'Create Design', to: '/dashboard/ai-studio' },
+  { label: 'View Listings', to: '/dashboard/listings' },
+  { label: 'SEO Optimizer', to: '/dashboard/seo-optimizer' },
 ];
 
 const recentActivity = [
@@ -94,7 +95,7 @@ const DashboardPage: React.FC = () => {
             ))}
           </ul>
           <div className="mt-4 text-right">
-            <Button variant="link" to="/activity">View All Activity &gt;</Button>
+            <Button variant="link" to="/dashboard/analytics">View All Activity &gt;</Button>
           </div>
         </div>
       </div>

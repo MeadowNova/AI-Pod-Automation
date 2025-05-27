@@ -1,5 +1,6 @@
 from datetime import datetime, timedelta
 from typing import Any, Optional, Union
+import logging
 
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
@@ -8,6 +9,8 @@ from pydantic import ValidationError
 
 from app.core.config import settings
 from app.schemas.token import TokenPayload
+
+logger = logging.getLogger(__name__)
 
 oauth2_scheme = OAuth2PasswordBearer(
     tokenUrl=f"{settings.API_V1_STR}/auth/login"
@@ -56,23 +59,45 @@ async def get_current_user(token: str = Depends(oauth2_scheme)) -> str:
     """
     Validate access token and return user ID
     """
+    logger.debug(f"Validating token: {token[:20]}..." if token else "No token provided")
+
     try:
         payload = jwt.decode(
             token, settings.JWT_SECRET, algorithms=[settings.JWT_ALGORITHM]
         )
+        logger.debug(f"Token payload decoded successfully: {payload}")
+
         token_data = TokenPayload(**payload)
-        
+
         if datetime.fromtimestamp(token_data.exp) < datetime.utcnow():
+            logger.warning(f"Token expired for user {token_data.sub}")
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Token expired",
                 headers={"WWW-Authenticate": "Bearer"},
             )
-    except (JWTError, ValidationError):
+
+        logger.debug(f"Token validation successful for user: {token_data.sub}")
+        return token_data.sub
+
+    except JWTError as e:
+        logger.error(f"JWT validation error: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Could not validate credentials",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    
-    return token_data.sub
+    except ValidationError as e:
+        logger.error(f"Token payload validation error: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Could not validate credentials",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    except Exception as e:
+        logger.error(f"Unexpected error during token validation: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Could not validate credentials",
+            headers={"WWW-Authenticate": "Bearer"},
+        )

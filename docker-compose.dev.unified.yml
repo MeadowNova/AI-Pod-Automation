@@ -21,6 +21,9 @@ services:
       # The following environment variables are kept for reference but not actually used
       - AI_MODEL_HOST=http://host.docker.internal:11434  # Point to the Ollama service on the host
       - AI_MODEL_NAME=mistral:latest  # Specify the preferred model
+      # OpenAI API configuration for SEO optimization
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - OPENAI_MODEL=${OPENAI_MODEL:-gpt-4o}
     env_file:
       - .env.dev
     command: uvicorn app.main:app --reload --host 0.0.0.0 --port 8001
